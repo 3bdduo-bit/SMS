@@ -4,7 +4,7 @@
    صفحة إنشاء الحساب  /auth/signup
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → http://localhost:3000/auth  { action:"signup", name, email, password }
+   - POST → https://educationplatform2-production.up.railway.app/auth/register  { fullName, email, password }
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -17,7 +17,7 @@ import {
 
 export default function SignupPage() {
   /* ── حالة النموذج ── */
-  const [name, setName]                       = useState("");
+  const [fullName, setFullName]               = useState("");
   const [email, setEmail]                     = useState("");
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,10 +43,10 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/auth", {
+      const res = await fetch("https://educationplatform2-production.up.railway.app/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "signup", name, email, password }),
+        body: JSON.stringify({ fullName, email, password }),
       });
 
       if (!res.ok) throw new Error("فشل إنشاء الحساب. ربما البريد الإلكتروني مستخدم بالفعل.");
@@ -159,10 +159,11 @@ export default function SignupPage() {
               <input
                 id="signup-name"
                 type="text"
-                placeholder="محمد أحمد"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                placeholder="محمد أحمد علي"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 required
+                minLength={10}
                 className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
               />
             </div>

@@ -4,7 +4,7 @@
    صفحة تسجيل الدخول  /auth/login
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → http://localhost:3000/auth  { action:"login", email, password }
+   - POST → https://educationplatform2-production.up.railway.app/auth/login  { email, password }
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -34,10 +34,10 @@ export default function LoginPage() {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:3000/auth", {
+      const res = await fetch("https://educationplatform2-production.up.railway.app/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!res.ok) throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
