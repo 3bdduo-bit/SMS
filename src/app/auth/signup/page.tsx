@@ -5,7 +5,7 @@
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
    - POST → http://localhost:3000/auth  { action:"signup", name, email, password }
-   - الألوان: #0A2947 / #FFE5BF / #FFF2DB / #FFFAF3
+   - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
 import { useState } from "react";
@@ -59,8 +59,25 @@ export default function SignupPage() {
     }
   };
 
-  /* ── مكوّن مساعد: حقل الإدخال مع الأيقونة ── */
-  /* هذا يُقلّل التكرار ويجعل الكود أنظف */
+  /* ── كلاس مشترك لحقول الإدخال — لتجنب التكرار ── */
+  const inputBase = `
+    w-full py-2.5 sm:py-3 rounded-xl
+    border-2 border-[#FFF2DB] bg-[#FFFAF3]
+    text-[#0A2947] placeholder-gray-300 text-sm
+    outline-none transition-all duration-300
+    focus:border-[#A8C8E8] focus:bg-white
+    focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]
+    hover:border-[#A8C8E8]/60
+  `;
+
+  /* ── كلاس مشترك لزر إظهار/إخفاء كلمة المرور ── */
+  const eyeBtnBase = `
+    absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2
+    text-gray-400 hover:text-[#0A2947]
+    transition-all duration-200
+    p-1 rounded-md hover:bg-[#FFF2DB]
+    active:scale-90 cursor-pointer
+  `;
 
   /* ─────────────────────── JSX ─────────────────────── */
   return (
@@ -87,8 +104,10 @@ export default function SignupPage() {
 
         {/* ── شعار الصفحة ── */}
         <div className="flex justify-center mb-5 sm:mb-6">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0A2947] flex items-center justify-center shadow-lg">
-            <UserPlus className="w-7 h-7 sm:w-8 sm:h-8 text-[#FFE5BF]" />
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0A2947]
+                          flex items-center justify-center shadow-lg
+                          transition-transform duration-300 hover:scale-105">
+            <UserPlus className="w-7 h-7 sm:w-8 sm:h-8 text-[#A8C8E8]" />
           </div>
         </div>
 
@@ -103,7 +122,8 @@ export default function SignupPage() {
         {/* ── رسالة الخطأ ── */}
         {error && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700
-                          rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium">
+                          rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium
+                          animate-[fadeUp_0.25s_ease-out_forwards]">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -112,7 +132,8 @@ export default function SignupPage() {
         {/* ── رسالة النجاح ── */}
         {success && (
           <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700
-                          rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium">
+                          rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium
+                          animate-[fadeUp_0.25s_ease-out_forwards]">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{success}</span>
           </div>
@@ -121,14 +142,20 @@ export default function SignupPage() {
         {/* ── النموذج ── */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
 
-          {/* حقل الاسم الكامل */}
+          {/* ── حقل الاسم الكامل ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label htmlFor="signup-name" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+            <label
+              htmlFor="signup-name"
+              className="text-xs sm:text-sm font-semibold text-[#0A2947]
+                         transition-colors duration-200 cursor-text"
+            >
               الاسم الكامل
             </label>
-            <div className="relative">
-              {/* أيقونة المستخدم — يمين (RTL) */}
-              <User className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="relative group">
+              {/* أيقونة المستخدم — يمين (RTL) مع انتقال لوني */}
+              <User className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+                               w-4 h-4 text-gray-400 pointer-events-none
+                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-name"
                 type="text"
@@ -136,22 +163,25 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl border-2 border-[#FFF2DB]
-                           bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
-                           outline-none transition-all duration-200
-                           focus:border-[#FFE5BF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(255,229,191,0.4)]"
+                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
               />
             </div>
           </div>
 
-          {/* حقل البريد الإلكتروني */}
+          {/* ── حقل البريد الإلكتروني ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label htmlFor="signup-email" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+            <label
+              htmlFor="signup-email"
+              className="text-xs sm:text-sm font-semibold text-[#0A2947]
+                         transition-colors duration-200 cursor-text"
+            >
               البريد الإلكتروني
             </label>
-            <div className="relative">
-              {/* أيقونة البريد — يمين (RTL) */}
-              <Mail className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div className="relative group">
+              {/* أيقونة البريد — يمين (RTL) مع انتقال لوني */}
+              <Mail className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+                               w-4 h-4 text-gray-400 pointer-events-none
+                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-email"
                 type="email"
@@ -159,22 +189,25 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl border-2 border-[#FFF2DB]
-                           bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
-                           outline-none transition-all duration-200
-                           focus:border-[#FFE5BF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(255,229,191,0.4)]"
+                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
               />
             </div>
           </div>
 
-          {/* حقل كلمة المرور */}
+          {/* ── حقل كلمة المرور ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label htmlFor="signup-password" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+            <label
+              htmlFor="signup-password"
+              className="text-xs sm:text-sm font-semibold text-[#0A2947]
+                         transition-colors duration-200 cursor-text"
+            >
               كلمة المرور
             </label>
-            <div className="relative">
+            <div className="relative group">
               {/* أيقونة القفل — يمين (RTL) */}
-              <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+                               w-4 h-4 text-gray-400 pointer-events-none
+                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-password"
                 type={showPassword ? "text" : "password"}
@@ -183,17 +216,13 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl border-2 border-[#FFF2DB]
-                           bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
-                           outline-none transition-all duration-200
-                           focus:border-[#FFE5BF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(255,229,191,0.4)]"
+                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
               />
               {/* زر إظهار/إخفاء — يسار (RTL) */}
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
-                className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2
-                           text-gray-400 hover:text-[#0A2947] transition-colors duration-150 p-1 rounded-md"
+                className={eyeBtnBase}
                 aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -202,14 +231,20 @@ export default function SignupPage() {
             <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">٦ أحرف على الأقل</p>
           </div>
 
-          {/* حقل تأكيد كلمة المرور */}
+          {/* ── حقل تأكيد كلمة المرور ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label htmlFor="signup-confirm" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+            <label
+              htmlFor="signup-confirm"
+              className="text-xs sm:text-sm font-semibold text-[#0A2947]
+                         transition-colors duration-200 cursor-text"
+            >
               تأكيد كلمة المرور
             </label>
-            <div className="relative">
+            <div className="relative group">
               {/* أيقونة القفل — يمين (RTL) */}
-              <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+                               w-4 h-4 text-gray-400 pointer-events-none
+                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-confirm"
                 type={showConfirm ? "text" : "password"}
@@ -217,17 +252,13 @@ export default function SignupPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl border-2 border-[#FFF2DB]
-                           bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
-                           outline-none transition-all duration-200
-                           focus:border-[#FFE5BF] focus:bg-white focus:shadow-[0_0_0_4px_rgba(255,229,191,0.4)]"
+                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
               />
               {/* زر إظهار/إخفاء — يسار (RTL) */}
               <button
                 type="button"
                 onClick={() => setShowConfirm((p) => !p)}
-                className="absolute left-2.5 sm:left-3.5 top-1/2 -translate-y-1/2
-                           text-gray-400 hover:text-[#0A2947] transition-colors duration-150 p-1 rounded-md"
+                className={eyeBtnBase}
                 aria-label={showConfirm ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               >
                 {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -235,21 +266,29 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* زر الإرسال */}
+          {/* ── زر الإرسال — ناعم ومتجاوب ── */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 sm:py-3.5 rounded-xl bg-[#0A2947] text-[#FFFAF3] font-bold text-sm
-                       transition-all duration-200 flex items-center justify-center gap-2 mt-1
-                       hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-lg
-                       active:translate-y-0 active:shadow-md
-                       disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0"
+            className="
+              w-full py-3 sm:py-3.5 rounded-xl
+              bg-[#0A2947] text-[#FFFAF3]
+              font-bold text-sm tracking-wide
+              flex items-center justify-center gap-2 mt-1
+              transition-all duration-300 ease-in-out
+              hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,41,71,0.3)]
+              active:translate-y-0 active:shadow-md active:scale-[0.98]
+              disabled:opacity-60 disabled:cursor-not-allowed
+              disabled:translate-y-0 disabled:shadow-none disabled:scale-100
+              cursor-pointer
+            "
           >
             {loading ? (
               <>
                 {/* spinner بشعار ARC */}
                 <div className="relative w-5 h-5">
-                  <div className="absolute inset-0 rounded-full border-2 border-[#FFE5BF]/30 border-t-[#FFE5BF] animate-spin" />
+                  <div className="absolute inset-0 rounded-full border-2
+                                  border-[#A8C8E8]/30 border-t-[#A8C8E8] animate-spin" />
                   <div className="absolute inset-0.5 rounded-full overflow-hidden">
                     <Image src="/arc-logo.jpg" alt="" fill className="object-cover" />
                   </div>
@@ -277,7 +316,11 @@ export default function SignupPage() {
           لديك حساب بالفعل؟{" "}
           <Link
             href="/auth/login"
-            className="text-[#0A2947] font-bold hover:underline transition-colors duration-150"
+            className="text-[#0A2947] font-bold
+                       relative after:absolute after:bottom-0 after:right-0
+                       after:h-[2px] after:w-0 after:bg-[#0A2947]
+                       after:transition-all after:duration-300
+                       hover:after:w-full"
           >
             سجّل دخولك
           </Link>

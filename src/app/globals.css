@@ -5,7 +5,7 @@
 /* These are referenced as Tailwind arbitrary values: bg-[var(--color-brand)] etc. */
 :root {
   --color-brand:      #0A2947; /* Deep navy — primary brand color      */
-  --color-warm-deep:  #FFE5BF; /* Warm apricot — accent / highlights   */
+  --color-warm-deep:  #A8C8E8; /* Soft sky blue — accent / highlights  */
   --color-warm-mid:   #FFF2DB; /* Light peach — card borders / inputs  */
   --color-warm-light: #FFFAF3; /* Off-white cream — page backgrounds   */
 }

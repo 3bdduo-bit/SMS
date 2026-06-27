@@ -4,7 +4,7 @@
    صفحة البداية  /
    - شاشة تعريفية متجاوبة مع جميع الشاشات (موبايل → سطح مكتب)
    - تظهر مرة واحدة فقط لكل جلسة (sessionStorage)
-   - الألوان: #0A2947 / #FFE5BF / #FFF2DB / #FFFAF3
+   - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
 import { useEffect, useState } from "react";
@@ -69,7 +69,7 @@ export default function SplashPage() {
         {/* الحلقة الخارجية — تتكيف مع حجم الشاشة */}
         <div
           className="
-            absolute rounded-full border-4 border-[#FFE5BF]/30
+            absolute rounded-full border-4 border-[#A8C8E8]/30
             w-44 h-44 sm:w-52 sm:h-52 md:w-64 md:h-64
             animate-[spinRing_3s_linear_infinite]
           "
@@ -88,7 +88,7 @@ export default function SplashPage() {
         <div
           className="
             relative rounded-full overflow-hidden shadow-2xl
-            border-4 border-[#FFE5BF]/40
+            border-4 border-[#A8C8E8]/40
             w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44
             animate-[logoPulse_2s_ease-in-out_infinite]
           "
@@ -107,7 +107,7 @@ export default function SplashPage() {
       {/* ── اسم المنصة — حجم الخط متجاوب ── */}
       <h1
         className="
-          mt-8 sm:mt-10 font-extrabold tracking-widest text-[#FFE5BF]
+          mt-8 sm:mt-10 font-extrabold tracking-widest text-[#A8C8E8]
           text-3xl sm:text-4xl md:text-5xl
           animate-[fadeUp_0.8s_ease-out_0.3s_both]
         "
@@ -137,7 +137,7 @@ export default function SplashPage() {
         <div className="relative w-10 h-10 sm:w-12 sm:h-12">
           <div
             className="absolute inset-0 rounded-full border-[3px]
-                       border-[#FFE5BF]/20 border-t-[#FFE5BF] animate-spin"
+                       border-[#A8C8E8]/20 border-t-[#A8C8E8] animate-spin"
           />
           <div className="absolute inset-1.5 rounded-full overflow-hidden">
             <Image src="/arc-logo.jpg" alt="" fill className="object-cover" />
@@ -160,8 +160,8 @@ export default function SplashPage() {
           to   { transform: rotate(-360deg); }
         }
         @keyframes logoPulse {
-          0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(255,229,191,0); }
-          50%       { transform: scale(1.04); box-shadow: 0 0 24px 8px rgba(255,229,191,0.15); }
+          0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(168,200,232,0); }
+          50%       { transform: scale(1.04); box-shadow: 0 0 24px 8px rgba(168,200,232,0.18); }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
