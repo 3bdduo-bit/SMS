@@ -4,7 +4,7 @@
    صفحة إنشاء الحساب  /auth/signup
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → https://educationplatform2-production.up.railway.app/auth/register  { fullName, email, password }
+   - POST → /api/auth/register  (proxy → Railway)
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -43,7 +43,7 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("https://educationplatform2-production.up.railway.app/auth/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, email, password }),

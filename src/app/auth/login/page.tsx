@@ -4,7 +4,7 @@
    صفحة تسجيل الدخول  /auth/login
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → https://educationplatform2-production.up.railway.app/auth/login  { email, password }
+   - POST → /api/auth/login  (proxy → Railway)
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setSuccess("");
 
     try {
-      const res = await fetch("https://educationplatform2-production.up.railway.app/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
