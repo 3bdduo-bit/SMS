@@ -1,0 +1,18 @@
+/* ─── Tailwind base import ─── */
+@import "tailwindcss";
+
+/* ─── Custom color palette CSS variables ─── */
+/* These are referenced as Tailwind arbitrary values: bg-[var(--color-brand)] etc. */
+:root {
+  --color-brand:      #0A2947; /* Deep navy — primary brand color      */
+  --color-warm-deep:  #FFE5BF; /* Warm apricot — accent / highlights   */
+  --color-warm-mid:   #FFF2DB; /* Light peach — card borders / inputs  */
+  --color-warm-light: #FFFAF3; /* Off-white cream — page backgrounds   */
+}
+
+/* ─── Global resets ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
