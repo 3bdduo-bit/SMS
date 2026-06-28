@@ -31,18 +31,50 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm]   = useState(false);
   const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState("");
+  const [errors, setErrors]             = useState<{
+    fullName?: string;
+    email?: string;
+    phoneNumber?: string;
+    password?: string;
+    confirmPassword?: string;
+    general?: string;
+  }>({});
   const [success, setSuccess]           = useState("");
 
   /* ── معالج الإرسال ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setSuccess("");
+    setErrors({});
 
-    /* تحقق من تطابق كلمتَي المرور قبل الإرسال */
+    const validationErrors: {
+      fullName?: string;
+      email?: string;
+      phoneNumber?: string;
+      password?: string;
+      confirmPassword?: string;
+      general?: string;
+    } = {};
+
+    if (!fullName) validationErrors.fullName = "الاسم الكامل مطلوب";
+    else if (!/^[\u0621-\u064A\s]+$/.test(fullName)) validationErrors.fullName = "يجب أن يكون الاسم باللغة العربية فقط";
+    else if (fullName.trim().split(/\s+/).length < 3) validationErrors.fullName = "يجب أن يكون الاسم ثلاثياً على الأقل";
+
+    if (!email) validationErrors.email = "البريد الإلكتروني مطلوب";
+    else if (!/^\S+@\S+\.\S+$/.test(email)) validationErrors.email = "صيغة البريد غير صحيحة";
+
+    if (!phoneNumber) validationErrors.phoneNumber = "رقم الهاتف مطلوب";
+    else if (!/^(?:\+20|0)1[0125][0-9]{8}$/.test(phoneNumber)) validationErrors.phoneNumber = "رقم الهاتف غير صحيح (يجب أن يكون رقماً مصرياً)";
+
+    if (!password) validationErrors.password = "كلمة المرور مطلوبة";
+    else if (password.length < 6) validationErrors.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل";
+
     if (password !== confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين. يرجى المحاولة مجدداً.");
+      validationErrors.confirmPassword = "كلمتا المرور غير متطابقتين";
+    }
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
@@ -72,21 +104,21 @@ export default function SignupPage() {
       setSuccess("تم إنشاء الحساب بنجاح! جارٍ التحويل…");
       setTimeout(() => router.push("/student"), 600);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع.");
+      setErrors({ general: err instanceof Error ? err.message : "حدث خطأ غير متوقع." });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ── كلاس مشترك لحقول الإدخال — لتجنب التكرار ── */
-  const inputBase = `
-    w-full py-2.5 sm:py-3 rounded-xl
-    border-2 border-[#FFF2DB] bg-[#FFFAF3]
+  /* ── دالة للكلاس المشترك لحقول الإدخال ── */
+  const getInputClass = (errorMsg?: string) => `
+    w-full py-2.5 sm:py-3 rounded-xl border-2 bg-[#FFFAF3]
     text-[#0A2947] placeholder-gray-300 text-sm
-    outline-none transition-all duration-300
-    focus:border-[#A8C8E8] focus:bg-white
-    focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]
-    hover:border-[#A8C8E8]/60
+    outline-none transition-all duration-300 focus:bg-white
+    ${errorMsg
+      ? "border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]"
+      : "border-[#FFF2DB] focus:border-[#A8C8E8] focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)] hover:border-[#A8C8E8]/60"
+    }
   `;
 
   /* ── كلاس مشترك لزر إظهار/إخفاء كلمة المرور ── */
@@ -128,12 +160,12 @@ export default function SignupPage() {
         </p>
 
         {/* ── رسالة الخطأ ── */}
-        {error && (
+        {errors.general && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700
                           rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium
                           animate-[fadeUp_0.25s_ease-out_forwards]">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <span>{errors.general}</span>
           </div>
         )}
 
@@ -164,12 +196,19 @@ export default function SignupPage() {
                 type="text"
                 placeholder="محمد أحمد علي"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
+                }}
                 required
-                minLength={10}
-                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
+                className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.fullName)}`}
               />
             </div>
+            {errors.fullName && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.fullName}
+              </span>
+            )}
           </div>
 
           {/* ── حقل البريد الإلكتروني ── */}
@@ -186,11 +225,19 @@ export default function SignupPage() {
                 type="email"
                 placeholder="example@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                }}
                 required
-                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
+                className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.email)}`}
               />
             </div>
+            {errors.email && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.email}
+              </span>
+            )}
           </div>
 
           {/* ── حقل رقم الهاتف ── */}
@@ -205,13 +252,23 @@ export default function SignupPage() {
               <input
                 id="signup-phone"
                 type="tel"
-                placeholder="01XXXXXXXXX"
+                placeholder="01XXXXXXXXX أو +201XXXXXXXXX"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d+]/g, "");
+                  setPhoneNumber(val);
+                  if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: undefined }));
+                }}
+                required
+                className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.phoneNumber)}`}
                 dir="ltr"
               />
             </div>
+            {errors.phoneNumber && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.phoneNumber}
+              </span>
+            )}
           </div>
 
           {/* ── حقل كلمة المرور ── */}
@@ -228,10 +285,12 @@ export default function SignupPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+                }}
                 required
-                minLength={6}
-                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
+                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${getInputClass(errors.password)}`}
               />
               <button
                 type="button"
@@ -242,7 +301,13 @@ export default function SignupPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">٦ أحرف على الأقل</p>
+            {errors.password ? (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.password}
+              </span>
+            ) : (
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5">٦ أحرف على الأقل</p>
+            )}
           </div>
 
           {/* ── حقل تأكيد كلمة المرور ── */}
@@ -259,9 +324,12 @@ export default function SignupPage() {
                 type={showConfirm ? "text" : "password"}
                 placeholder="••••••••"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
+                }}
                 required
-                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
+                className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${getInputClass(errors.confirmPassword)}`}
               />
               <button
                 type="button"
@@ -272,6 +340,11 @@ export default function SignupPage() {
                 {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {errors.confirmPassword && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.confirmPassword}
+              </span>
+            )}
           </div>
 
           {/* ── زر الإرسال ── */}

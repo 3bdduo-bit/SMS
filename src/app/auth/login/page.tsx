@@ -27,15 +27,27 @@ export default function LoginPage() {
   /* ── حالة الواجهة ── */
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState("");
+  const [errors, setErrors]             = useState<{ email?: string; password?: string; general?: string }>({});
   const [success, setSuccess]           = useState("");
 
   /* ── معالج الإرسال ── */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
     setSuccess("");
+    setErrors({});
+
+    const validationErrors: { email?: string; password?: string; general?: string } = {};
+    if (!email) validationErrors.email = "البريد الإلكتروني مطلوب";
+    else if (!/\S+@\S+\.\S+/.test(email)) validationErrors.email = "صيغة البريد الإلكتروني غير صحيحة";
+    
+    if (!password) validationErrors.password = "كلمة المرور مطلوبة";
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const API_URL =
@@ -69,7 +81,7 @@ export default function LoginPage() {
       setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");
       setTimeout(() => router.push("/student"), 600);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع.");
+      setErrors({ general: err instanceof Error ? err.message : "حدث خطأ غير متوقع." });
     } finally {
       setLoading(false);
     }
@@ -103,12 +115,12 @@ export default function LoginPage() {
         </p>
 
         {/* ── رسالة الخطأ ── */}
-        {error && (
+        {errors.general && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700
                           rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium
                           animate-[fadeUp_0.25s_ease-out_forwards]">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <span>{errors.general}</span>
           </div>
         )}
 
@@ -139,17 +151,26 @@ export default function LoginPage() {
                 type="email"
                 placeholder="example@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                }}
                 required
-                className="w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl
-                           border-2 border-[#FFF2DB] bg-[#FFFAF3]
-                           text-[#0A2947] placeholder-gray-300 text-sm
+                className={`w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl
+                           border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
                            outline-none transition-all duration-300
-                           focus:border-[#A8C8E8] focus:bg-white
-                           focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]
-                           hover:border-[#A8C8E8]/60"
+                           focus:bg-white
+                           ${errors.email 
+                             ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]' 
+                             : 'border-[#FFF2DB] focus:border-[#A8C8E8] focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)] hover:border-[#A8C8E8]/60'
+                           }`}
               />
             </div>
+            {errors.email && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.email}
+              </span>
+            )}
           </div>
 
           {/* حقل كلمة المرور */}
@@ -166,15 +187,19 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+                }}
                 required
-                className="w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl
-                           border-2 border-[#FFF2DB] bg-[#FFFAF3]
-                           text-[#0A2947] placeholder-gray-300 text-sm
+                className={`w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl
+                           border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
                            outline-none transition-all duration-300
-                           focus:border-[#A8C8E8] focus:bg-white
-                           focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]
-                           hover:border-[#A8C8E8]/60"
+                           focus:bg-white
+                           ${errors.password 
+                             ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]' 
+                             : 'border-[#FFF2DB] focus:border-[#A8C8E8] focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)] hover:border-[#A8C8E8]/60'
+                           }`}
               />
               <button
                 type="button"
@@ -189,6 +214,11 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {errors.password && (
+              <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
+                <AlertCircle className="w-3 h-3" /> {errors.password}
+              </span>
+            )}
           </div>
 
           {/* ── زر الإرسال ── */}
