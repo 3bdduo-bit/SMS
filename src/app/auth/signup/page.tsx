@@ -12,11 +12,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Eye, EyeOff, UserPlus, Mail, Lock, User, Phone, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
 export default function SignupPage() {
+  const router = useRouter();
+
   /* ── حالة النموذج ── */
   const [fullName, setFullName]               = useState("");
   const [email, setEmail]                     = useState("");
@@ -66,8 +69,8 @@ export default function SignupPage() {
         throw new Error(detail);
       }
 
-      setSuccess("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
-      /* TODO: router.push('/auth/login') */
+      setSuccess("تم إنشاء الحساب بنجاح! جارٍ التحويل…");
+      setTimeout(() => router.push("/student"), 600);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع.");
     } finally {

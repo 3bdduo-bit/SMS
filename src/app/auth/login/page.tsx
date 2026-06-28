@@ -67,7 +67,7 @@ export default function LoginPage() {
       }
 
       setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");
-      setTimeout(() => router.push("/dashboard"), 600);
+      setTimeout(() => router.push("/student"), 600);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع.");
     } finally {
