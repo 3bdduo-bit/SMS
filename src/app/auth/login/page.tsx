@@ -2,20 +2,24 @@
 
 /* ─────────────────────────────────────────────────────────────────────────────
    صفحة تسجيل الدخول  /auth/login
+
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → /api/auth/login  (proxy → Railway)
+   - POST → https://educationplatform2-production.up.railway.app/auth/login
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Eye, EyeOff, LogIn, Mail, Lock, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   /* ── حالة النموذج ── */
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -34,15 +38,36 @@ export default function LoginPage() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://educationplatform2-production.up.railway.app";
+
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const detail =
+          data?.errorDetails?.[0]?.message ||
+          data?.message ||
+          "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+        throw new Error(detail);
+      }
+
+      // لو الباك إند رجع توكن، خزّنه
+      if (data?.data?.token) {
+        localStorage.setItem("token", data.data.token);
+      }
+      if (data?.data?.user) {
+        localStorage.setItem("user", JSON.stringify(data.data.user));
+      }
+
       setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");
-      /* TODO: router.push('/dashboard') */
+      setTimeout(() => router.push("/dashboard"), 600);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع.");
     } finally {
@@ -50,19 +75,8 @@ export default function LoginPage() {
     }
   };
 
-  /* ─────────────────────── JSX ─────────────────────── */
   return (
-    /*
-     * min-h-[100dvh] → يحترم شريط المتصفح في الموبايل
-     * py-8 sm:py-12  → مسافة عمودية متجاوبة
-     */
     <main className="min-h-[100dvh] flex items-center justify-center bg-[#FFFAF3] px-4 py-8 sm:py-12">
-
-      {/*
-       * البطاقة:
-       * - على الموبايل: تملأ العرض كاملاً مع زوايا أصغر وحشو أقل
-       * - على sm وما فوق: عرض محدد بـ max-w-md مع زوايا وحشو أكبر
-       */}
       <div
         className="
           w-full max-w-sm sm:max-w-md
@@ -72,7 +86,6 @@ export default function LoginPage() {
           animate-[fadeUp_0.4s_ease-out_forwards]
         "
       >
-
         {/* ── شعار الصفحة ── */}
         <div className="flex justify-center mb-5 sm:mb-6">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0A2947] flex items-center justify-center shadow-lg
@@ -114,16 +127,10 @@ export default function LoginPage() {
 
           {/* حقل البريد الإلكتروني */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            {/* تسمية ناعمة مع انتقال لوني */}
-            <label
-              htmlFor="login-email"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="login-email" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               البريد الإلكتروني
             </label>
             <div className="relative group">
-              {/* أيقونة البريد — يمين (RTL) مع انتقال لوني */}
               <Mail className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
                                w-4 h-4 text-gray-400 pointer-events-none
                                transition-colors duration-200 group-focus-within:text-[#0A2947]" />
@@ -134,7 +141,6 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                /* حشو متجاوب مع py أكبر للمس أسهل */
                 className="w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl
                            border-2 border-[#FFF2DB] bg-[#FFFAF3]
                            text-[#0A2947] placeholder-gray-300 text-sm
@@ -148,18 +154,13 @@ export default function LoginPage() {
 
           {/* حقل كلمة المرور */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label
-              htmlFor="login-password"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="login-password" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               كلمة المرور
             </label>
             <div className="relative group">
-              {/* أيقونة القفل — يمين (RTL) مع انتقال لوني */}
               <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
-                               w-4 h-4 text-gray-400 pointer-events-none
-                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
+                              w-4 h-4 text-gray-400 pointer-events-none
+                              transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="login-password"
                 type={showPassword ? "text" : "password"}
@@ -175,7 +176,6 @@ export default function LoginPage() {
                            focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]
                            hover:border-[#A8C8E8]/60"
               />
-              {/* زر إظهار/إخفاء — يسار (RTL) — حجم اللمس 44px+ */}
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
@@ -191,7 +191,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* ── زر الإرسال — ناعم ومتجاوب ── */}
+          {/* ── زر الإرسال ── */}
           <button
             type="submit"
             disabled={loading}
@@ -204,13 +204,12 @@ export default function LoginPage() {
               hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,41,71,0.3)]
               active:translate-y-0 active:shadow-md active:scale-[0.98]
               disabled:opacity-60 disabled:cursor-not-allowed
-              disabled:translate-y-0 disabled:shadow-none disabled:scale-100
+              translate-y-0 shadow-none scale-100
               cursor-pointer
             "
           >
             {loading ? (
               <>
-                {/* spinner بشعار ARC */}
                 <div className="relative w-5 h-5">
                   <div className="absolute inset-0 rounded-full border-2
                                   border-[#A8C8E8]/30 border-t-[#A8C8E8] animate-spin" />
@@ -222,7 +221,7 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                <LogIn className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                <LogIn className="w-4 h-4" />
                 تسجيل الدخول
               </>
             )}
@@ -252,7 +251,6 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* ── انيميشن الظهور ── */}
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }

@@ -2,9 +2,10 @@
 
 /* ─────────────────────────────────────────────────────────────────────────────
    صفحة إنشاء الحساب  /auth/signup
+
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
    - Tailwind CSS + lucide-react + Next/Image
-   - POST → /api/auth/register  (proxy → Railway)
+   - POST → https://educationplatform2-production.up.railway.app/auth/register
    - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -12,13 +13,14 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Eye, EyeOff, UserPlus, Mail, Lock, User, AlertCircle, CheckCircle2,
+  Eye, EyeOff, UserPlus, Mail, Lock, User, Phone, AlertCircle, CheckCircle2,
 } from "lucide-react";
 
 export default function SignupPage() {
   /* ── حالة النموذج ── */
   const [fullName, setFullName]               = useState("");
   const [email, setEmail]                     = useState("");
+  const [phoneNumber, setPhoneNumber]         = useState("");
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -43,13 +45,27 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL ||
+        "https://educationplatform2-production.up.railway.app";
+
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName, email, password, phoneNumber }),
       });
 
-      if (!res.ok) throw new Error("فشل إنشاء الحساب. ربما البريد الإلكتروني مستخدم بالفعل.");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        // لو الباك إند رجع errorDetails (joi/zod) نعرض أول رسالة مفيدة
+        const detail =
+          data?.errorDetails?.[0]?.message ||
+          data?.message ||
+          "فشل إنشاء الحساب. ربما البريد الإلكتروني مستخدم بالفعل.";
+        throw new Error(detail);
+      }
+
       setSuccess("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
       /* TODO: router.push('/auth/login') */
     } catch (err: unknown) {
@@ -81,17 +97,7 @@ export default function SignupPage() {
 
   /* ─────────────────────── JSX ─────────────────────── */
   return (
-    /*
-     * min-h-[100dvh] → يحترم شريط المتصفح في الموبايل
-     * overflow-y-auto → يسمح بالتمرير إذا كان المحتوى أطول من الشاشة (موبايل صغير)
-     */
     <main className="min-h-[100dvh] flex items-center justify-center bg-[#FFFAF3] px-4 py-8 sm:py-12">
-
-      {/*
-       * البطاقة:
-       * - موبايل: عرض كامل، زوايا وحشو أصغر
-       * - sm وما فوق: عرض محدود، زوايا وحشو أكبر
-       */}
       <div
         className="
           w-full max-w-sm sm:max-w-md
@@ -101,7 +107,6 @@ export default function SignupPage() {
           animate-[fadeUp_0.4s_ease-out_forwards]
         "
       >
-
         {/* ── شعار الصفحة ── */}
         <div className="flex justify-center mb-5 sm:mb-6">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#0A2947]
@@ -144,15 +149,10 @@ export default function SignupPage() {
 
           {/* ── حقل الاسم الكامل ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label
-              htmlFor="signup-name"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="signup-name" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               الاسم الكامل
             </label>
             <div className="relative group">
-              {/* أيقونة المستخدم — يمين (RTL) مع انتقال لوني */}
               <User className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
                                w-4 h-4 text-gray-400 pointer-events-none
                                transition-colors duration-200 group-focus-within:text-[#0A2947]" />
@@ -171,15 +171,10 @@ export default function SignupPage() {
 
           {/* ── حقل البريد الإلكتروني ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label
-              htmlFor="signup-email"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="signup-email" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               البريد الإلكتروني
             </label>
             <div className="relative group">
-              {/* أيقونة البريد — يمين (RTL) مع انتقال لوني */}
               <Mail className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
                                w-4 h-4 text-gray-400 pointer-events-none
                                transition-colors duration-200 group-focus-within:text-[#0A2947]" />
@@ -195,20 +190,36 @@ export default function SignupPage() {
             </div>
           </div>
 
+          {/* ── حقل رقم الهاتف ── */}
+          <div className="flex flex-col gap-1 sm:gap-1.5">
+            <label htmlFor="signup-phone" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+              رقم الهاتف
+            </label>
+            <div className="relative group">
+              <Phone className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+                                w-4 h-4 text-gray-400 pointer-events-none
+                                transition-colors duration-200 group-focus-within:text-[#0A2947]" />
+              <input
+                id="signup-phone"
+                type="tel"
+                placeholder="01XXXXXXXXX"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                className={`pr-9 sm:pr-10 pl-4 ${inputBase}`}
+                dir="ltr"
+              />
+            </div>
+          </div>
+
           {/* ── حقل كلمة المرور ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label
-              htmlFor="signup-password"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="signup-password" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               كلمة المرور
             </label>
             <div className="relative group">
-              {/* أيقونة القفل — يمين (RTL) */}
               <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
-                               w-4 h-4 text-gray-400 pointer-events-none
-                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
+                              w-4 h-4 text-gray-400 pointer-events-none
+                              transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-password"
                 type={showPassword ? "text" : "password"}
@@ -219,7 +230,6 @@ export default function SignupPage() {
                 minLength={6}
                 className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
               />
-              {/* زر إظهار/إخفاء — يسار (RTL) */}
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
@@ -234,18 +244,13 @@ export default function SignupPage() {
 
           {/* ── حقل تأكيد كلمة المرور ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label
-              htmlFor="signup-confirm"
-              className="text-xs sm:text-sm font-semibold text-[#0A2947]
-                         transition-colors duration-200 cursor-text"
-            >
+            <label htmlFor="signup-confirm" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               تأكيد كلمة المرور
             </label>
             <div className="relative group">
-              {/* أيقونة القفل — يمين (RTL) */}
               <Lock className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
-                               w-4 h-4 text-gray-400 pointer-events-none
-                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
+                              w-4 h-4 text-gray-400 pointer-events-none
+                              transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="signup-confirm"
                 type={showConfirm ? "text" : "password"}
@@ -255,7 +260,6 @@ export default function SignupPage() {
                 required
                 className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${inputBase}`}
               />
-              {/* زر إظهار/إخفاء — يسار (RTL) */}
               <button
                 type="button"
                 onClick={() => setShowConfirm((p) => !p)}
@@ -267,7 +271,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* ── زر الإرسال — ناعم ومتجاوب ── */}
+          {/* ── زر الإرسال ── */}
           <button
             type="submit"
             disabled={loading}
@@ -280,13 +284,12 @@ export default function SignupPage() {
               hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,41,71,0.3)]
               active:translate-y-0 active:shadow-md active:scale-[0.98]
               disabled:opacity-60 disabled:cursor-not-allowed
-              disabled:translate-y-0 disabled:shadow-none disabled:scale-100
+              translate-y-0 shadow-none scale-100
               cursor-pointer
             "
           >
             {loading ? (
               <>
-                {/* spinner بشعار ARC */}
                 <div className="relative w-5 h-5">
                   <div className="absolute inset-0 rounded-full border-2
                                   border-[#A8C8E8]/30 border-t-[#A8C8E8] animate-spin" />
@@ -328,7 +331,6 @@ export default function SignupPage() {
         </p>
       </div>
 
-      {/* ── انيميشن الظهور ── */}
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
