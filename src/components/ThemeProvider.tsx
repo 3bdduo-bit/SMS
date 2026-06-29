@@ -87,11 +87,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
 
-    /* إخفاء الأوفرلاي بعد اكتمال الأنيميشن (ما تبقى بعد الـ 1000ms الأولى) */
+    /* إخفاء الأوفرلاي بعد اكتمال الأنيميشن (ما تبقى بعد الـ 500ms الأولى) */
     setTimeout(() => {
       setOverlayActive(false);
       isAnimating.current = false;
-    }, 1060); // ما تبقى من الـ 2000ms بعد الـ 1000ms الأولى + هامش بسيط
+    }, 560); // ما تبقى من الـ 1000ms بعد الـ 500ms الأولى + هامش بسيط
   }, []);
 
   return (

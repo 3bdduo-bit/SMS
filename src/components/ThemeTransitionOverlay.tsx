@@ -36,10 +36,10 @@ export default function ThemeTransitionOverlay({ towardDark, active, onDone }: P
     /* بدء مرحلة التمدد */
     setPhase("expand");
 
-    /* عند المنتصف (1000ms) → أبلغ Provider لتطبيق الثيم */
+    /* عند المنتصف (500ms) → أبلغ Provider لتطبيق الثيم */
     const midpoint = setTimeout(() => {
       onDone();
-    }, 1000);
+    }, 500);
 
     return () => clearTimeout(midpoint);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,7 +79,7 @@ export default function ThemeTransitionOverlay({ towardDark, active, onDone }: P
           /* أنيميشن التمدد عبر CSS */
           animation:
             phase === "expand"
-              ? "themeRippleExpand 2000ms cubic-bezier(0.4, 0, 0.2, 1) forwards"
+              ? "themeRippleExpand 1000ms cubic-bezier(0.4, 0, 0.2, 1) forwards"
               : "none",
         }}
       />
