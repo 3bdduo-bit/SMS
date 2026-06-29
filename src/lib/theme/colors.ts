@@ -43,8 +43,8 @@ export const DARK = {
   cardHovSh: "0 12px 32px rgba(0,0,0,0.5)",
 } as const;
 
-/* نوع الألوان */
-export type ThemeColors = typeof LIGHT;
+/* نوع الألوان (مبسط ليكون string بدلاً من القيم الحرفية الثابتة) */
+export type ThemeColors = Record<keyof typeof LIGHT, string>;
 
 /* دالة مساعدة: ترجع الألوان المناسبة للثيم الحالي */
 export function getColors(isDark: boolean): ThemeColors {
