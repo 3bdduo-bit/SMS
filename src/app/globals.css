@@ -1,13 +1,59 @@
 /* ─── Tailwind base import ─── */
 @import "tailwindcss";
 
-/* ─── Custom color palette CSS variables ─── */
-/* These are referenced as Tailwind arbitrary values: bg-[var(--color-brand)] etc. */
+/* ─────────────────────────────────────────────────────────────────────
+   CSS Variables — Light Mode (الوضع النهاري)
+   Referenced as: bg-[var(--bg-page)], text-[var(--text-primary)], etc.
+───────────────────────────────────────────────────────────────────────── */
 :root {
-  --color-brand:      #0A2947; /* Deep navy — primary brand color      */
-  --color-warm-deep:  #A8C8E8; /* Soft sky blue — accent / highlights  */
-  --color-warm-mid:   #FFF2DB; /* Light peach — card borders / inputs  */
-  --color-warm-light: #FFFAF3; /* Off-white cream — page backgrounds   */
+  /* لوحة الألوان الرسمية */
+  --color-brand:       #0A2947;
+  --color-accent:      #A8C8E8;
+  --color-border:      #FFF2DB;
+  --color-bg-page:     #FFFAF3;
+
+  /* ألوان واجهة الوضع النهاري */
+  --bg-page:           #FFFAF3;   /* خلفية الصفحة */
+  --bg-card:           #FFFFFF;   /* خلفية البطاقات */
+  --bg-nav:            #FFFFFF;   /* خلفية الـ navbar */
+  --bg-input:          #FFFAF3;   /* خلفية حقول الإدخال */
+  --bg-hero:           #0A2947;   /* خلفية الـ hero section */
+  --bg-icon:           rgba(168,200,232,0.20); /* خلفية الأيقونات */
+
+  --text-primary:      #0A2947;   /* النص الأساسي */
+  --text-secondary:    #4B6280;   /* النص الثانوي */
+  --text-muted:        #9CA3AF;   /* النص الخافت */
+
+  --border-color:      #FFF2DB;   /* لون الحدود */
+  --border-accent:     #A8C8E8;   /* حدود التمييز */
+
+  --shadow-nav:        0 1px 8px rgba(10,41,71,0.08);
+  --shadow-card:       0 4px 24px rgba(10,41,71,0.07);
+  --shadow-card-hover: 0 12px 32px rgba(10,41,71,0.14);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CSS Variables — Dark Mode (الوضع الليلي)
+   يُفعَّل بإضافة class="dark" على عنصر <html>
+───────────────────────────────────────────────────────────────────────── */
+.dark {
+  --bg-page:           #0D1B2A;   /* خلفية داكنة دافئة للعيون */
+  --bg-card:           #142235;   /* بطاقات داكنة مريحة */
+  --bg-nav:            #0F1E30;   /* الـ navbar الداكن */
+  --bg-input:          #1A2D42;   /* حقول إدخال داكنة */
+  --bg-hero:           #0F1E30;   /* hero داكن */
+  --bg-icon:           rgba(168,200,232,0.12);
+
+  --text-primary:      #E8F4FD;   /* نص أبيض ناعم مريح */
+  --text-secondary:    #A8C8E8;   /* نص ثانوي بالأزرق الفاتح */
+  --text-muted:        #5E7A94;   /* نص خافت */
+
+  --border-color:      #1E3550;   /* حدود داكنة */
+  --border-accent:     #2A4A6E;   /* حدود تمييز */
+
+  --shadow-nav:        0 1px 8px rgba(0,0,0,0.4);
+  --shadow-card:       0 4px 24px rgba(0,0,0,0.3);
+  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.5);
 }
 
 /* ─── Global resets ─── */
@@ -15,4 +61,40 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+/* ─── تطبيق ألوان الصفحة عبر CSS variables ─── */
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+/* ─── Smooth theme transition على كل العناصر ─── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* ─── keyframes مشتركة ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── أنيميشن زر التبديل (الشمس والقمر) ── */
+@keyframes spinIn {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.5); }
+  to   { opacity: 1; transform: rotate(0deg) scale(1); }
 }

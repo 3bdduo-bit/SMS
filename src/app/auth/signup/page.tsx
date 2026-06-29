@@ -176,10 +176,18 @@ export default function SignupPage() {
 
       // في حال وجود خطأ من السيرفر (مثل اسم المستخدم مأخوذ مسبقاً)
       if (!res.ok) {
-        const detail =
+        let detail =
           data?.errorDetails?.[0]?.message ||
           data?.message ||
-          "فشل إنشاء الحساب. ربما اسم المستخدم أو رقم الهاتف مستخدم بالفعل.";
+          "فشل إنشاء الحساب. الرجاء التحقق من البيانات.";
+          
+        // ترجمة رسائل الخطأ من الباك إند لتكون واضحة وبالعربية للطالب
+        if (detail.includes("Invalid option") || detail.includes("expected one of")) {
+          detail = "عذراً، المرحلة الدراسية التي اخترتها غير مفعلة حالياً في الخادم. (يرجى مراجعة الإدارة)";
+        } else if (detail.toLowerCase().includes("exist") || detail.toLowerCase().includes("taken")) {
+          detail = "اسم المستخدم أو رقم الهاتف أو البريد الإلكتروني مسجل مسبقاً.";
+        }
+
         throw new Error(detail);
       }
 
@@ -294,7 +302,6 @@ export default function SignupPage() {
                   if (errors.fullName) setErrors(prev => ({ ...prev, fullName: undefined }));
                 }}
                 onBlur={(e) => handleBlur("fullName", e.target.value)}
-                required
                 className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.fullName)}`}
               />
             </div>
@@ -337,7 +344,6 @@ export default function SignupPage() {
                   if (errors.username) setErrors(prev => ({ ...prev, username: undefined }));
                 }}
                 onBlur={(e) => handleBlur("userName", e.target.value)}
-                required
                 className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.username)}`}
                 dir="ltr"
               />
@@ -371,7 +377,6 @@ export default function SignupPage() {
                   if (errors.phoneNumber) setErrors(prev => ({ ...prev, phoneNumber: undefined }));
                 }}
                 onBlur={(e) => handleBlur("phoneNumber", e.target.value.replace(/[^\d+]/g, ""))}
-                required
                 className={`pr-9 sm:pr-10 pl-4 ${getInputClass(errors.phoneNumber)}`}
                 dir="ltr"
               />
@@ -400,7 +405,6 @@ export default function SignupPage() {
                   if (errors.level) setErrors(prev => ({ ...prev, level: undefined }));
                 }}
                 onBlur={(e) => handleBlur("level", e.target.value)}
-                required
                 className={`pr-9 sm:pr-10 pl-4 appearance-none ${getInputClass(errors.level)}`}
               >
                 <option value="" disabled>اختر المرحلة الدراسية</option>
@@ -454,7 +458,6 @@ export default function SignupPage() {
                   if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
                 }}
                 onBlur={(e) => handleBlur("password", e.target.value)}
-                required
                 className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${getInputClass(errors.password)}`}
                 dir="ltr"
               />
@@ -496,7 +499,6 @@ export default function SignupPage() {
                   if (errors.confirmPassword) setErrors(prev => ({ ...prev, confirmPassword: undefined }));
                 }}
                 onBlur={(e) => handleBlur("confirmPassword", e.target.value)}
-                required
                 className={`pr-9 sm:pr-10 pl-10 sm:pl-11 ${getInputClass(errors.confirmPassword)}`}
                 dir="ltr"
               />

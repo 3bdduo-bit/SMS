@@ -2,10 +2,11 @@
    Root Layout
    - lang="ar"  → المحتوى عربي
    - dir="rtl"  → اتجاه RTL لكامل التطبيق
-   - viewport   → يمنع zoom التلقائي في iOS ويحترم شريط المتصفح
+   - ThemeProvider → يوفر isDark للكل المكوّنات
 ───────────────────────────────────────────────────────────────────────────── */
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 /* عنوان وصف الصفحة */
 export const metadata: Metadata = {
@@ -13,13 +14,13 @@ export const metadata: Metadata = {
   description: "منصة تعليمية للطلاب والمعلمين",
 };
 
-/* إعدادات الـ viewport — مهمة للتجاوب مع الموبايل */
+/* إعدادات الـ viewport */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,          /* يمنع zoom التلقائي عند focus على الـ input في iOS */
+  maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",     /* يحترم الـ notch والـ home bar */
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -30,10 +31,12 @@ export default function RootLayout({
   return (
     /* lang="ar" + dir="rtl" يُطبَّقان على كامل الموقع */
     <html lang="ar" dir="rtl">
-      <body className="min-h-screen flex flex-col bg-[#FFFAF3]">
-        {children}
+      <body className="min-h-screen flex flex-col">
+        {/* ThemeProvider يجعل كل المكوّنات تُعيد الرسم عند تغيير الثيم */}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
 }
-

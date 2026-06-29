@@ -188,7 +188,6 @@ export default function LoginPage() {
                   if (errors.userName) setErrors(prev => ({ ...prev, userName: undefined }));
                 }}
                 onBlur={(e) => handleBlur("userName", e.target.value)}
-                required
                 className={`w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl
                            border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
                            outline-none transition-all duration-300
@@ -227,7 +226,6 @@ export default function LoginPage() {
                   if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
                 }}
                 onBlur={(e) => handleBlur("password", e.target.value)}
-                required
                 className={`w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl
                            border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
                            outline-none transition-all duration-300
