@@ -12,7 +12,7 @@
 import {
   BookOpen, Calendar, FileText, User, GraduationCap,
   Settings, Bell, LogOut, ChevronLeft, CreditCard,
-  LayoutDashboard, ClipboardList, MessageSquare,
+  LayoutDashboard, ClipboardList, MessageSquare, Menu, X
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,6 +44,7 @@ export default function StudentPage() {
   const { isDark }         = useTheme();          /* ← يُعيد الرسم عند تغيير الثيم */
   const C                  = getColors(isDark);   /* ← ألوان الثيم الحالي */
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   /* ── جلب بيانات المستخدم عند تحميل الصفحة ── */
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function StudentPage() {
 
           {/* جرس الإشعارات */}
           <button
-            className="relative p-2 rounded-full hover:bg-[#A8C8E8]/20 transition-colors"
+            className="hidden sm:block relative p-2 rounded-full hover:bg-[#A8C8E8]/20 transition-colors"
             style={{ color: C.textP }}
             aria-label="الإشعارات"
           >
@@ -112,7 +113,7 @@ export default function StudentPage() {
           </button>
 
           {/* أفاتار الطالب — الحرف الأول من الاسم الكامل */}
-          <Link href="/student/profile">
+          <Link href="/student/profile" className="hidden sm:block">
             <div
               className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#A8C8E8] flex items-center justify-center text-[#0A2947] font-extrabold text-sm shadow-inner select-none cursor-pointer hover:ring-2 hover:ring-[#0A2947] transition-all"
               title="الملف الشخصي"
@@ -129,11 +130,54 @@ export default function StudentPage() {
             <LogOut className="w-4 h-4" />
             خروج
           </button>
+
+          {/* القائمة الجانبية للموبايل */}
+          <button
+            className="sm:hidden p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            style={{ color: C.textP }}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
       </nav>
 
+      {/* ════════════ القائمة المنسدلة للموبايل ════════════ */}
+      {isMobileMenuOpen && (
+        <div 
+          className={`sm:hidden absolute left-0 right-0 top-[65px] z-40 p-4 border-b shadow-lg animate-[fadeUp_0.2s_ease-out_both]`}
+          style={{ backgroundColor: C.nav, borderColor: C.border }}
+        >
+          <div className="flex flex-col gap-4">
+            <Link href="#" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
+              <LayoutDashboard className="w-5 h-5" />
+              <span className="font-semibold text-sm">الرئيسية</span>
+            </Link>
+            <Link href="#" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
+              <BookOpen className="w-5 h-5" />
+              <span className="font-semibold text-sm">مقرراتي</span>
+            </Link>
+            <Link href="/student/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
+              <User className="w-5 h-5" />
+              <span className="font-semibold text-sm">حسابي ({getFirstName()})</span>
+            </Link>
+            <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }}>
+              <span className="font-semibold text-sm flex-1">المظهر</span>
+              <ThemeToggle />
+            </div>
+            <button
+              onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-red-50 text-red-500 font-semibold text-sm text-right w-full"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>تسجيل الخروج</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ════════════ المحتوى الرئيسي ════════════ */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-28 sm:pb-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 
         {/* ── لافتة الترحيب ── */}
         <div
@@ -213,29 +257,6 @@ export default function StudentPage() {
         </div>
       </main>
 
-      {/* ════════════ شريط التنقل السفلي (موبايل) ════════════ */}
-      <div
-        className={`sm:hidden fixed bottom-0 left-0 right-0 px-6 py-3 flex justify-around items-center z-50 ${tr}`}
-        style={{ backgroundColor: C.nav, borderTop: `1px solid ${C.border}` }}
-      >
-        <Link href="#" className="flex flex-col items-center gap-0.5" style={{ color: C.textP }}>
-          <LayoutDashboard className="w-6 h-6" />
-          <span className="text-[9px] font-bold">الرئيسية</span>
-        </Link>
-        <Link href="#" className="flex flex-col items-center gap-0.5 transition-colors" style={{ color: C.textM }}>
-          <BookOpen className="w-6 h-6" />
-          <span className="text-[9px] font-bold">مقرراتي</span>
-        </Link>
-        <ThemeToggle />
-        <Link
-          href="/student/profile"
-          className="flex flex-col items-center gap-0.5 transition-colors"
-          style={{ color: C.textM }}
-        >
-          <User className="w-6 h-6" />
-          <span className="text-[9px] font-bold">حسابي</span>
-        </Link>
-      </div>
     </div>
   );
 }
