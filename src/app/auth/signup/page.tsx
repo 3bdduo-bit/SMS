@@ -141,19 +141,38 @@ export default function SignupPage() {
         throw new Error(detail);
       }
 
-      const token = data?.data?.token || data?.token || data?.accessToken;
+      let token = data?.data?.token || data?.token || data?.accessToken;
+      let userObj = data?.data?.user || data?.user || data?.data;
+
+      // تسجيل الدخول التلقائي في حال لم يرسل الباك إند المفتاح (Token)
+      if (!token) {
+        try {
+          const loginRes = await fetch(`${API_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userName, password }),
+          });
+          if (loginRes.ok) {
+            const loginData = await loginRes.json().catch(() => ({}));
+            token = loginData?.data?.token || loginData?.token || loginData?.accessToken;
+            userObj = loginData?.data?.user || loginData?.user || loginData?.data;
+          }
+        } catch (err) {
+          console.error("Auto login failed:", err);
+        }
+      }
+
+      // حفظ التوكن والبيانات في المتصفح
       if (token) {
         localStorage.setItem("token", token);
       }
-      
-      const userObj = data?.data?.user || data?.user || data?.data;
       if (userObj) {
         localStorage.setItem("user", JSON.stringify(userObj));
       }
 
-      setSuccess("تم إنشاء الحساب بنجاح! جارٍ التحويل…");
+      setSuccess("تم التسجيل وتأكيد الدخول بنجاح! جارٍ التحويل…");
       
-      // إذا رجع التوكن نوديه للطالب، غير كدا نوديه للوجين
+      // التوجيه
       if (token) {
         setTimeout(() => router.push("/student"), 600);
       } else {

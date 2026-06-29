@@ -173,11 +173,11 @@ export default function ProfilePage() {
           </div>
 
           {/* أزرار الإجراءات */}
-          <div className="relative z-10 flex flex-wrap gap-3 mt-7">
-            <Link href="/student/profile/edit" className="flex items-center gap-2 bg-[#FFF2DB] text-[#0A2947] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5">
+          <div className="relative z-10 flex flex-col sm:flex-row gap-3 mt-7 w-full sm:w-auto">
+            <Link href="/student/profile/edit" className="flex items-center justify-center gap-2 bg-[#FFF2DB] text-[#0A2947] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 w-full sm:w-auto text-center">
               <Pencil className="w-4 h-4" /> تعديل الملف
             </Link>
-            <button onClick={() => setShowDeleteModal(true)} className="flex items-center gap-2 bg-red-500/10 border border-red-400/30 text-red-300 hover:bg-red-500/20 hover:text-red-200 px-5 py-2.5 rounded-xl font-bold text-sm transition-all">
+            <button onClick={() => setShowDeleteModal(true)} className="flex items-center justify-center gap-2 bg-red-500/10 border border-red-400/30 text-red-300 hover:bg-red-500/20 hover:text-red-200 px-5 py-2.5 rounded-xl font-bold text-sm transition-all w-full sm:w-auto text-center cursor-pointer">
               <Trash2 className="w-4 h-4" /> حذف الحساب
             </button>
           </div>

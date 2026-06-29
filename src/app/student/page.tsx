@@ -97,7 +97,9 @@ export default function StudentPage() {
         <div className="flex items-center gap-2 sm:gap-3">
 
           {/* زر تبديل الثيم */}
-          <ThemeToggle />
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
 
           {/* جرس الإشعارات */}
           <button
@@ -225,13 +227,14 @@ export default function StudentPage() {
           <span className="text-[9px] font-bold">مقرراتي</span>
         </Link>
         <ThemeToggle />
-        <button
-          onClick={handleLogout}
-          className="flex flex-col items-center gap-0.5 text-red-500 hover:text-red-700 transition-colors"
+        <Link
+          href="/student/profile"
+          className="flex flex-col items-center gap-0.5 transition-colors"
+          style={{ color: C.textM }}
         >
-          <LogOut className="w-6 h-6" />
-          <span className="text-[9px] font-bold">خروج</span>
-        </button>
+          <User className="w-6 h-6" />
+          <span className="text-[9px] font-bold">حسابي</span>
+        </Link>
       </div>
     </div>
   );
