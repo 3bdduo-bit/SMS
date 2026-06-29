@@ -90,11 +90,14 @@ export default function LoginPage() {
         throw new Error(detail);
       }
 
-      if (data?.data?.token) {
-        localStorage.setItem("token", data.data.token);
+      const token = data?.data?.token || data?.token || data?.accessToken;
+      if (token) {
+        localStorage.setItem("token", token);
       }
-      if (data?.data?.user) {
-        localStorage.setItem("user", JSON.stringify(data.data.user));
+      
+      const userObj = data?.data?.user || data?.user || data?.data;
+      if (userObj) {
+        localStorage.setItem("user", JSON.stringify(userObj));
       }
 
       setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");

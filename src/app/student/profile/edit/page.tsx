@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  User, Mail, Phone, Lock, Eye, EyeOff,
+  User, Phone, Lock, Eye, EyeOff,
   Save, ArrowRight, GraduationCap, LogOut,
   AlertCircle, CheckCircle2, RefreshCw,
 } from "lucide-react";
@@ -24,7 +24,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 /* ── نوع أخطاء النموذج ── */
 interface FormErrors {
   fullName?: string;
-  email?: string;
   phone?: string;
   password?: string;
   confirmPassword?: string;
@@ -42,7 +41,6 @@ export default function EditProfilePage() {
 
   /* ── بيانات النموذج ── */
   const [fullName, setFullName]               = useState("");
-  const [email, setEmail]                     = useState("");
   const [phone, setPhone]                     = useState("");
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,7 +60,6 @@ export default function EditProfilePage() {
     try {
       const data: UserProfile = await getProfile();
       setFullName(data.fullName || data.name || "");
-      setEmail(data.email || "");
       setPhone(data.phoneNumber || data.phone || "");
     } catch (err: unknown) {
       setFetchError(err instanceof Error ? err.message : "فشل في جلب البيانات.");
@@ -77,7 +74,6 @@ export default function EditProfilePage() {
   /* ── التحقق من الحقول ── */
   const validate = (): boolean => {
     const e: FormErrors = {};
-    if (email   && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))       e.email           = "البريد الإلكتروني غير صالح.";
     if (phone   && !/^[\d+\-\s()]{7,20}$/.test(phone))              e.phone           = "رقم الهاتف غير صالح.";
     if (password && password.length < 6)                              e.password        = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
     if (password && password !== confirmPassword)                     e.confirmPassword = "كلمتا المرور غير متطابقتان.";
@@ -92,7 +88,6 @@ export default function EditProfilePage() {
 
     const payload: Record<string, string> = {};
     if (fullName.trim()) payload.fullName    = fullName.trim();
-    if (email.trim())    payload.email       = email.trim();
     if (phone.trim())    payload.phoneNumber = phone.trim();
     if (password)        payload.password    = password;
 
@@ -191,7 +186,6 @@ export default function EditProfilePage() {
             <SectionTitle C={C} title="المعلومات الشخصية" />
 
             <FormField C={C} id="edit-fullname" label="الاسم الكامل"         icon={User}  value={fullName} onChange={setFullName} error={errors.fullName} placeholder="محمد أحمد" />
-            <FormField C={C} id="edit-email"    label="البريد الإلكتروني"    icon={Mail}  value={email}    onChange={setEmail}    error={errors.email}    placeholder="example@email.com" type="email" ltr />
             <FormField C={C} id="edit-phone"    label="رقم الهاتف"            icon={Phone} value={phone}    onChange={setPhone}    error={errors.phone}    placeholder="+20 1xx xxx xxxx" type="tel" ltr />
 
             {/* ── فاصل كلمة المرور ── */}

@@ -141,8 +141,24 @@ export default function SignupPage() {
         throw new Error(detail);
       }
 
+      const token = data?.data?.token || data?.token || data?.accessToken;
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      
+      const userObj = data?.data?.user || data?.user || data?.data;
+      if (userObj) {
+        localStorage.setItem("user", JSON.stringify(userObj));
+      }
+
       setSuccess("تم إنشاء الحساب بنجاح! جارٍ التحويل…");
-      setTimeout(() => router.push("/student"), 600);
+      
+      // إذا رجع التوكن نوديه للطالب، غير كدا نوديه للوجين
+      if (token) {
+        setTimeout(() => router.push("/student"), 600);
+      } else {
+        setTimeout(() => router.push("/auth/login"), 1500);
+      }
     } catch (err: unknown) {
       setErrors({ general: err instanceof Error ? err.message : "حدث خطأ غير متوقع." });
     } finally {
