@@ -4,9 +4,10 @@
    صفحة تسجيل الدخول  /auth/login
 
    - متجاوبة مع جميع الشاشات (موبايل → تابلت → سطح مكتب)
-   - Tailwind CSS + lucide-react + Next/Image
-   - POST → https://educationplatform2-production.up.railway.app/auth/login
-   - الألوان: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
+   - تعتمد على إطار العمل Tailwind CSS ومكتبة الأيقونات lucide-react
+   - تقوم بإرسال البيانات (POST) إلى السيرفر:
+     https://educationplatform2-production.up.railway.app/auth/login
+   - الألوان المستخدمة: #0A2947 / #A8C8E8 / #FFF2DB / #FFFAF3
 ───────────────────────────────────────────────────────────────────────────── */
 
 import { useState } from "react";
@@ -14,32 +15,57 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  Eye, EyeOff, LogIn, Mail, Lock, AlertCircle, CheckCircle2,
+  Eye, EyeOff, LogIn, Lock, AlertCircle, CheckCircle2, AtSign
 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  /* ── حالة النموذج ── */
-  const [email, setEmail]       = useState("");
+  /* 
+   * ── حالة النموذج (Form State) ──
+   * نحتاج فقط لاسم المستخدم وكلمة المرور بناءً على مسار الـ API
+   */
+  const [userName, setUserName] = useState(""); // اسم المستخدم — بحرف N كبير (camelCase) كما يتوقعه الباك إند
   const [password, setPassword] = useState("");
 
-  /* ── حالة الواجهة ── */
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading]           = useState(false);
-  const [errors, setErrors]             = useState<{ email?: string; password?: string; general?: string }>({});
-  const [success, setSuccess]           = useState("");
+  /* 
+   * ── حالة الواجهة (UI State) ──
+   */
+  const [showPassword, setShowPassword] = useState(false); // إظهار أو إخفاء كلمة المرور
+  const [loading, setLoading]           = useState(false); // حالة التحميل
+  const [success, setSuccess]           = useState("");    // رسالة النجاح
 
-  /* ── معالج الإرسال ── */
+  // رسائل الخطأ لكل حقل
+  const [errors, setErrors]             = useState<{ userName?: string; password?: string; general?: string }>({});
+
+  /* 
+   * ── دالة التحقق الفردي (Warner for each input) ──
+   * تعمل بمجرد أن يترك المستخدم الحقل (onBlur) لتعطيه تنبيهاً فورياً
+   */
+  const handleBlur = (field: string, value: string) => {
+    let error: string | undefined = undefined;
+    if (field === "userName") {
+      if (!value) error = "اسم المستخدم مطلوب";
+      else if (value.length < 3) error = "اسم المستخدم يجب أن يكون 3 أحرف على الأقل";
+    } else if (field === "password") {
+      if (!value) error = "كلمة المرور مطلوبة";
+    }
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  /* 
+   * ── معالج الإرسال (Submit Handler) ──
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess("");
     setErrors({});
 
-    const validationErrors: { email?: string; password?: string; general?: string } = {};
-    if (!email) validationErrors.email = "البريد الإلكتروني مطلوب";
-    else if (!/\S+@\S+\.\S+/.test(email)) validationErrors.email = "صيغة البريد الإلكتروني غير صحيحة";
-    
+    // التحقق من الحقول قبل الإرسال
+    const validationErrors: { userName?: string; password?: string; general?: string } = {};
+    if (!userName) validationErrors.userName = "اسم المستخدم مطلوب";
+    else if (userName.length < 3) validationErrors.userName = "اسم المستخدم يجب أن يكون 3 أحرف على الأقل";
+
     if (!password) validationErrors.password = "كلمة المرور مطلوبة";
 
     if (Object.keys(validationErrors).length > 0) {
@@ -54,23 +80,26 @@ export default function LoginPage() {
         process.env.NEXT_PUBLIC_API_URL ||
         "https://educationplatform2-production.up.railway.app";
 
+      // الاتصال برابط الـ API لإتمام تسجيل الدخول
       const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ userName, password }), // userName بحرف N كبير كما يتوقعه الباك إند
       });
 
       const data = await res.json().catch(() => ({}));
 
+      // في حال فشل تسجيل الدخول
       if (!res.ok) {
         const detail =
           data?.errorDetails?.[0]?.message ||
           data?.message ||
-          "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+          "اسم المستخدم أو كلمة المرور غير صحيحة.";
         throw new Error(detail);
       }
 
-      // لو الباك إند رجع توكن، خزّنه
+      // ── في حال النجاح ──
+      // حفظ التوكن وبيانات المستخدم في الـ localStorage
       if (data?.data?.token) {
         localStorage.setItem("token", data.data.token);
       }
@@ -79,6 +108,7 @@ export default function LoginPage() {
       }
 
       setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");
+      // تحويل المستخدم إلى لوحة التحكم (صفحة الطالب)
       setTimeout(() => router.push("/student"), 600);
     } catch (err: unknown) {
       setErrors({ general: err instanceof Error ? err.message : "حدث خطأ غير متوقع." });
@@ -87,6 +117,7 @@ export default function LoginPage() {
     }
   };
 
+  /* ─────────────────────── بدء واجهة المستخدم (JSX) ─────────────────────── */
   return (
     <main className="min-h-[100dvh] flex items-center justify-center bg-[#FFFAF3] px-4 py-8 sm:py-12">
       <div
@@ -114,7 +145,7 @@ export default function LoginPage() {
           سجّل دخولك للمتابعة إلى حسابك
         </p>
 
-        {/* ── رسالة الخطأ ── */}
+        {/* ── رسالة الخطأ العامة ── */}
         {errors.general && (
           <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700
                           rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 mb-4 sm:mb-5 text-xs sm:text-sm font-medium
@@ -134,46 +165,49 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* ── النموذج ── */}
+        {/* ── نموذج الإدخال ── */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
 
-          {/* حقل البريد الإلكتروني */}
+          {/* ── حقل اسم المستخدم ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
-            <label htmlFor="login-email" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
-              البريد الإلكتروني
+            <label htmlFor="login-username" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
+              اسم المستخدم
             </label>
             <div className="relative group">
-              <Mail className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
+              <AtSign className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2
                                w-4 h-4 text-gray-400 pointer-events-none
                                transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
-                id="login-email"
-                type="email"
-                placeholder="example@email.com"
-                value={email}
+                id="login-username"
+                type="text"
+                placeholder="user_123"
+                value={userName}
                 onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                  setUserName(e.target.value);
+                  // إخفاء الخطأ فوراً عند البدء في الكتابة
+                  if (errors.userName) setErrors(prev => ({ ...prev, userName: undefined }));
                 }}
+                onBlur={(e) => handleBlur("userName", e.target.value)}
                 required
                 className={`w-full pr-9 sm:pr-10 pl-4 py-2.5 sm:py-3 rounded-xl
                            border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
                            outline-none transition-all duration-300
                            focus:bg-white
-                           ${errors.email 
+                           ${errors.userName 
                              ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]' 
                              : 'border-[#FFF2DB] focus:border-[#A8C8E8] focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)] hover:border-[#A8C8E8]/60'
                            }`}
+                dir="ltr"
               />
             </div>
-            {errors.email && (
+            {errors.userName && (
               <span className="text-red-500 text-xs font-medium animate-[fadeUp_0.2s_ease-out_forwards] flex items-center gap-1 mt-1">
-                <AlertCircle className="w-3 h-3" /> {errors.email}
+                <AlertCircle className="w-3 h-3" /> {errors.userName}
               </span>
             )}
           </div>
 
-          {/* حقل كلمة المرور */}
+          {/* ── حقل كلمة المرور ── */}
           <div className="flex flex-col gap-1 sm:gap-1.5">
             <label htmlFor="login-password" className="text-xs sm:text-sm font-semibold text-[#0A2947]">
               كلمة المرور
@@ -184,6 +218,7 @@ export default function LoginPage() {
                               transition-colors duration-200 group-focus-within:text-[#0A2947]" />
               <input
                 id="login-password"
+                // التبديل بين إظهار نص أو كلمة سر
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
@@ -191,6 +226,7 @@ export default function LoginPage() {
                   setPassword(e.target.value);
                   if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
                 }}
+                onBlur={(e) => handleBlur("password", e.target.value)}
                 required
                 className={`w-full pr-9 sm:pr-10 pl-10 sm:pl-11 py-2.5 sm:py-3 rounded-xl
                            border-2 bg-[#FFFAF3] text-[#0A2947] placeholder-gray-300 text-sm
@@ -200,6 +236,7 @@ export default function LoginPage() {
                              ? 'border-red-400 focus:border-red-500 focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]' 
                              : 'border-[#FFF2DB] focus:border-[#A8C8E8] focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)] hover:border-[#A8C8E8]/60'
                            }`}
+                dir="ltr"
               />
               <button
                 type="button"
@@ -265,7 +302,7 @@ export default function LoginPage() {
           <div className="flex-1 h-px bg-[#FFF2DB]" />
         </div>
 
-        {/* ── رابط إنشاء حساب ── */}
+        {/* ── رابط الانتقال لإنشاء الحساب ── */}
         <p className="text-center text-xs sm:text-sm text-gray-400">
           ليس لديك حساب؟{" "}
           <Link
