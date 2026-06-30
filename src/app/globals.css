@@ -37,23 +37,24 @@
    يُفعَّل بإضافة class="dark" على عنصر <html>
 ───────────────────────────────────────────────────────────────────────── */
 .dark {
-  --bg-page:           #0D1B2A;   /* خلفية داكنة دافئة للعيون */
-  --bg-card:           #142235;   /* بطاقات داكنة مريحة */
-  --bg-nav:            #0F1E30;   /* الـ navbar الداكن */
-  --bg-input:          #1A2D42;   /* حقول إدخال داكنة */
-  --bg-hero:           #0F1E30;   /* hero داكن */
-  --bg-icon:           rgba(168,200,232,0.12);
+  /* لوحة ليلية مريحة — كحلي عميق + أزرق سماوي خافت */
+  --bg-page:           #0D1520;
+  --bg-card:           #151F2E;
+  --bg-nav:            #0F1929;
+  --bg-input:          #1A2538;
+  --bg-hero:           #0A2947;
+  --bg-icon:           rgba(168,200,232,0.10);
 
-  --text-primary:      #E8F4FD;   /* نص أبيض ناعم مريح */
-  --text-secondary:    #A8C8E8;   /* نص ثانوي بالأزرق الفاتح */
-  --text-muted:        #5E7A94;   /* نص خافت */
+  --text-primary:      #E8EDF3;
+  --text-secondary:    #9BB4CC;
+  --text-muted:        #5E7085;
 
-  --border-color:      #1E3550;   /* حدود داكنة */
-  --border-accent:     #2A4A6E;   /* حدود تمييز */
+  --border-color:      #243044;
+  --border-accent:     #3D5A73;
 
-  --shadow-nav:        0 1px 8px rgba(0,0,0,0.4);
-  --shadow-card:       0 4px 24px rgba(0,0,0,0.3);
-  --shadow-card-hover: 0 12px 32px rgba(0,0,0,0.5);
+  --shadow-nav:        0 1px 10px rgba(0,0,0,0.35);
+  --shadow-card:       0 4px 20px rgba(0,0,0,0.28);
+  --shadow-card-hover: 0 12px 36px rgba(0,0,0,0.42);
 }
 
 /* ─── Global resets ─── */

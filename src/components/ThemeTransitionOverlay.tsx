@@ -49,7 +49,7 @@ export default function ThemeTransitionOverlay({ towardDark, active, onDone }: P
 
   /* لون الدائرة حسب الوجهة */
   const bg = towardDark
-    ? "radial-gradient(circle, #0D1B2A 0%, #0A2947 100%)"
+    ? "radial-gradient(circle, #0D1520 0%, #0A2947 100%)"
     : "radial-gradient(circle, #FFFAF3 0%, #FFF2DB 100%)";
 
   return (

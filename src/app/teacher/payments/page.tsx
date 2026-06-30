@@ -414,7 +414,7 @@ export default function TeacherPaymentsPage() {
                 const badge = getPaymentBadge(student.ispaid);
 
                 return (
-                  <div key={id} className={`grid grid-cols-[3rem_1.5fr_1fr_1fr_1fr_8rem] gap-4 px-6 py-4 items-center ${tr} border-b last:border-b-0`} style={{ backgroundColor: isEditing ? (isDark ? "#1a2d42" : "#F0F7FF") : C.card, borderColor: C.border }}>
+                  <div key={id} className={`grid grid-cols-[3rem_1.5fr_1fr_1fr_1fr_8rem] gap-4 px-6 py-4 items-center ${tr} border-b last:border-b-0`} style={{ backgroundColor: isEditing ? (isDark ? C.input : "#F0F7FF") : C.card, borderColor: C.border }}>
                     <span className="text-sm font-bold" style={{ color: C.textM }}>{idx + 1}</span>
 
                     <Link href={`/teacher/students/${id}`} className="flex items-center gap-3 group">
