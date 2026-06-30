@@ -107,10 +107,6 @@ export default function ProfilePage() {
           <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>الملف الشخصي</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* رابط صفحة الاختبارات */}
-          <Link href="/student/exams" className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl transition-all hover:-translate-y-0.5" style={{ color: C.textS, backgroundColor: C.icon }}>
-            <ClipboardList className="w-4 h-4" /> الاختبارات
-          </Link>
           <ThemeToggle />
           <button onClick={handleLogout} className="flex items-center gap-1.5 text-red-500 hover:text-red-700 font-semibold text-sm transition-colors px-3 py-2 rounded-xl hover:bg-red-50">
             <LogOut className="w-4 h-4" /><span className="hidden sm:inline">خروج</span>
@@ -164,9 +160,6 @@ export default function ProfilePage() {
           <div className="relative z-10 flex flex-col sm:flex-row gap-3 mt-7 w-full sm:w-auto">
             <Link href="/student/profile/edit" className="flex items-center justify-center gap-2 bg-[#FFF2DB] text-[#0A2947] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 w-full sm:w-auto text-center">
               <KeyRound className="w-4 h-4" /> تغيير كلمة المرور
-            </Link>
-            <Link href="/student/exams" className="flex items-center justify-center gap-2 bg-[#A8C8E8]/20 text-[#FFFAF3] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-[#A8C8E8]/30 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 w-full sm:w-auto text-center border border-[#A8C8E8]/30">
-              <ClipboardList className="w-4 h-4" /> الاختبارات
             </Link>
           </div>
         </div>

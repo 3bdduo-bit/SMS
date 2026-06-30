@@ -496,12 +496,13 @@ export default function TeacherStudentsPage() {
             >
               {/* رأس الجدول */}
               <div
-                className="grid grid-cols-[3rem_2fr_1.5fr_1.5fr_8rem] gap-4 px-6 py-4 text-xs font-extrabold tracking-widest uppercase"
+                className="grid grid-cols-[3rem_2fr_1.5fr_1.5fr_1.5fr_8rem] gap-4 px-6 py-4 text-xs font-extrabold tracking-widest uppercase"
                 style={{ backgroundColor: "#0A2947", color: "#A8C8E8" }}
               >
                 <span>#</span>
                 <span>الطالب</span>
                 <span>اسم المستخدم</span>
+                <span>كلمة المرور</span>
                 <span>المستوى الدراسي</span>
                 <span className="text-center">إجراء</span>
               </div>
@@ -516,7 +517,7 @@ export default function TeacherStudentsPage() {
                 return (
                   <div
                     key={id}
-                    className={`grid grid-cols-[3rem_2fr_1.5fr_1.5fr_8rem] gap-4 px-6 py-4 items-center ${tr} border-b last:border-b-0`}
+                    className={`grid grid-cols-[3rem_2fr_1.5fr_1.5fr_1.5fr_8rem] gap-4 px-6 py-4 items-center ${tr} border-b last:border-b-0`}
                     style={{
                       backgroundColor: isEditing ? (isDark ? "#1a2d42" : "#F0F7FF") : C.card,
                       borderColor: C.border,
@@ -543,6 +544,11 @@ export default function TeacherStudentsPage() {
                     {/* اسم المستخدم */}
                     <span className="text-sm" style={{ color: C.textS }}>
                       {student.userName ?? "—"}
+                    </span>
+
+                    {/* كلمة المرور */}
+                    <span className="text-sm font-mono bg-black/5 px-2 py-1 rounded" style={{ color: C.textS }}>
+                      {(student.plainPassword as string) || (student.password as string) || "—"}
                     </span>
 
                     {/* المستوى — وضع العرض أو التعديل */}
@@ -673,6 +679,14 @@ export default function TeacherStudentsPage() {
                           <Edit3 className="w-4 h-4" />
                         </button>
                       )}
+                    </div>
+
+                    {/* كلمة المرور */}
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold mb-1.5" style={{ color: C.textM }}>كلمة المرور</p>
+                      <span className="text-sm font-mono bg-black/5 px-2 py-1 rounded" style={{ color: C.textP }}>
+                        {(student.plainPassword as string) || (student.password as string) || "—"}
+                      </span>
                     </div>
 
                     {/* المستوى */}

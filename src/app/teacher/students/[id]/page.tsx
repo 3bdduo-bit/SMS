@@ -16,7 +16,7 @@ import { useRouter, useParams } from "next/navigation";
 import {
   User, Mail, Phone, BookOpen, Calendar, ArrowRight,
   GraduationCap, LogOut, AlertTriangle, AlertCircle,
-  CheckCircle2, RefreshCw, Save, Trash2, Shield
+  CheckCircle2, RefreshCw, Save, Trash2, Shield, Lock, Eye, EyeOff
 } from "lucide-react";
 import { getStudent, updateStudent, deleteStudent, Student, LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
@@ -54,6 +54,8 @@ export default function StudentDetailsPage() {
   const [editFullName, setEditFullName]       = useState("");
   const [editPhone, setEditPhone]             = useState("");
   const [editLevel, setEditLevel]             = useState("");
+  const [editPassword, setEditPassword]       = useState("");
+  const [showPassword, setShowPassword]       = useState(false);
   const [submitting, setSubmitting]           = useState(false);
   const [success, setSuccess]                 = useState("");
   const [formError, setFormError]             = useState("");
@@ -73,6 +75,9 @@ export default function StudentDetailsPage() {
       setEditFullName(data.fullName || data.name || "");
       setEditPhone(data.phoneNumber || data.phone || "");
       setEditLevel(data.level || "");
+      // If the backend provides the password (in plain text or a specific field), we pre-fill it so the teacher can see it.
+      // Usually, it's either `password` or `plainPassword`.
+      setEditPassword((data.password as string) || (data.plainPassword as string) || "");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع في جلب بيانات الطالب.");
     } finally { setLoading(false); }
@@ -98,6 +103,7 @@ export default function StudentDetailsPage() {
     if (editFullName.trim()) payload.fullName = editFullName.trim();
     if (editPhone.trim())    payload.phoneNumber = editPhone.trim();
     if (editLevel)           payload.level = editLevel;
+    if (editPassword)        payload.password = editPassword;
 
     if (!Object.keys(payload).length) {
       setFormError("لا توجد بيانات لتحديثها.");
@@ -285,6 +291,35 @@ export default function StudentDetailsPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Password */}
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label htmlFor="edit-password" className="text-xs sm:text-sm font-semibold" style={{ color: C.textP }}>كلمة المرور</label>
+              <div className="relative group">
+                <Lock className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: C.textM }} />
+                <input
+                  id="edit-password" 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="أدخل كلمة مرور جديدة أو اعرض الحالية" 
+                  value={editPassword}
+                  onChange={e => setEditPassword(e.target.value)}
+                  className={`w-full pr-10 pl-11 py-3 rounded-xl text-sm outline-none transition-all duration-300 focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]`}
+                  style={{ backgroundColor: C.input, color: C.textP, border: `2px solid ${C.border}` }}
+                  dir="ltr"
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)} 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-all" 
+                  style={{ color: C.textM }}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs mt-1" style={{ color: C.textM }}>
+                يمكنك رؤية كلمة المرور الحالية (إن كانت متاحة) أو تعيين كلمة مرور جديدة.
+              </p>
             </div>
 
             <div className="md:col-span-2 mt-4">
