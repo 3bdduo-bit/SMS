@@ -1,18 +1,18 @@
 "use client";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   بوابة الطالب  /student
+   src/app/student/page.tsx
+   لوحة تحكم الطالب
 
-   - ديناميكية: تجلب اسم المستخدم الحقيقي من API
-   - دعم كامل للوضع الليلي عبر useTheme Context
-   - زر التبديل المتحرك في الـ navbar
-   - Tailwind CSS + lucide-react + RTL
+   الميزات:
+   - ترحيب بالطالب مع اسمه من الـ API
+   - بطاقات وصول سريع لصفحات الطالب (الاختبارات، الملف الشخصي)
+   - دعم الوضع الليلي + RTL + اللغة العربية
 ───────────────────────────────────────────────────────────────────────────── */
 
 import {
-  BookOpen, Calendar, FileText, User, GraduationCap,
-  Settings, Bell, LogOut, ChevronLeft, CreditCard,
-  LayoutDashboard, ClipboardList, MessageSquare, Menu, X
+  GraduationCap, ClipboardList, Settings, LogOut, User,
+  ChevronLeft, Bell, Menu, X, LayoutDashboard
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,32 +22,41 @@ import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
 import ThemeToggle from "@/components/ThemeToggle";
 
-/* ── بطاقات الوصول السريع ── */
+/* ── بطاقات الوصول السريع للطالب ── */
 const quickAccess = [
-  { title: "لوحة التحكم",      desc: "نظرة عامة على نشاطاتك وإحصائياتك الدراسية.",          icon: LayoutDashboard, href: "#" },
-  { title: "المقررات الدراسية", desc: "تصفّح جميع مقرراتك المسجّلة والمحتوى التعليمي.",      icon: BookOpen,        href: "#" },
-  { title: "الجدول الدراسي",   desc: "اطّلع على مواعيد محاضراتك وامتحاناتك.",               icon: Calendar,        href: "#" },
-  { title: "النتائج والدرجات", desc: "تابع درجاتك وأداءك في جميع المقررات.",                icon: FileText,        href: "#" },
-  { title: "الواجبات",         desc: "استعرض الواجبات المطلوبة وسلّمها في الموعد.",          icon: ClipboardList,   href: "#" },
-  { title: "المدفوعات",        desc: "تحقّق من حالة الرسوم الدراسية وسجل الدفع.",            icon: CreditCard,      href: "#" },
-  { title: "الملف الشخصي",     desc: "عدّل بياناتك الشخصية وكلمة المرور.",                  icon: User,            href: "/student/profile" },
-  { title: "الرسائل",          desc: "تواصل مع أساتذتك وإدارة الكلية مباشرةً.",             icon: MessageSquare,   href: "#" },
-  { title: "الشهادات",         desc: "اطّلع على شهاداتك وأوراق التخرج الرسمية.",            icon: GraduationCap,   href: "#" },
-  { title: "الإعدادات",        desc: "خصّص حسابك وإعدادات الإشعارات.",                      icon: Settings,        href: "#" },
+  {
+    title: "الاختبارات",
+    desc: "أدِّ الاختبارات المحددة لك وتعرّف على نتيجتك فوراً.",
+    icon: ClipboardList,
+    href: "/student/exams",
+    highlight: true, /* بطاقة مميّزة */
+  },
+  {
+    title: "الملف الشخصي",
+    desc: "إدارة إعدادات حسابك وتفضيلاتك وتغيير كلمة المرور.",
+    icon: User,
+    href: "/student/profile",
+    highlight: false,
+  },
 ];
 
 /* ════════════════════════════════════════════════════════════════════════════
    المكوّن الرئيسي
 ════════════════════════════════════════════════════════════════════════════ */
 export default function StudentPage() {
-  const router             = useRouter();
-  const { isDark }         = useTheme();          /* ← يُعيد الرسم عند تغيير الثيم */
-  const C                  = getColors(isDark);   /* ← ألوان الثيم الحالي */
+  const router = useRouter();
+  const { isDark } = useTheme();
+  const C = getColors(isDark);
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  /* ── جلب بيانات المستخدم عند تحميل الصفحة ── */
+  /* ── transition مشترك ── */
+  const tr = "transition-all duration-300 ease-in-out";
+
+  /* ── جلب البيانات عند التحميل ── */
   useEffect(() => {
+    /* جلب الملف الشخصي */
     getProfile()
       .then(data => setProfile(data))
       .catch(err => console.error("Failed to fetch profile:", err));
@@ -60,25 +69,25 @@ export default function StudentPage() {
     router.push("/auth/login");
   };
 
-  /* ── الحرف الأول من الاسم الكامل للأفاتار ── */
+  /* ── الحرف الأول للأفاتار ── */
   const getInitial = () => {
-    if (!profile) return "؟";
-    return (profile.fullName || profile.name || profile.userName || "؟").charAt(0).toUpperCase();
+    if (!profile) return "م";
+    return (profile.fullName ?? profile.name ?? profile.userName ?? "م").charAt(0).toUpperCase();
   };
 
   /* ── اسم الترحيب ── */
   const getFirstName = () => {
     if (!profile) return "";
-    const name = profile.fullName || profile.name || profile.userName || "";
-    return `يا ${name.split(" ")[0]}`;
+    const name = profile.fullName ?? profile.name ?? profile.userName ?? "";
+    return `أهلاً بك، ${name.split(" ")[0]}`;
   };
 
-  /* ────── transition مشترك لكل العناصر ────── */
-  const tr = "transition-all duration-300 ease-in-out";
-
   return (
-    <div className={`min-h-[100dvh] ${tr}`} style={{ backgroundColor: C.page, color: C.textP }} dir="rtl">
-
+    <div
+      className={`min-h-[100dvh] ${tr}`}
+      style={{ backgroundColor: C.page, color: C.textP }}
+      dir="rtl"
+    >
       {/* ════════════ شريط التنقل العلوي ════════════ */}
       <nav
         className={`px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-50 ${tr}`}
@@ -112,15 +121,13 @@ export default function StudentPage() {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
           </button>
 
-          {/* أفاتار الطالب — الحرف الأول من الاسم الكامل */}
-          <Link href="/student/profile" className="hidden sm:block">
-            <div
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#A8C8E8] flex items-center justify-center text-[#0A2947] font-extrabold text-sm shadow-inner select-none cursor-pointer hover:ring-2 hover:ring-[#0A2947] transition-all"
-              title="الملف الشخصي"
-            >
-              {getInitial()}
-            </div>
-          </Link>
+          {/* أفاتار الطالب */}
+          <div
+            className="hidden sm:flex w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#A8C8E8] items-center justify-center text-[#0A2947] font-extrabold text-sm shadow-inner select-none"
+            title="الملف الشخصي"
+          >
+            {getInitial()}
+          </div>
 
           {/* زر الخروج */}
           <button
@@ -133,7 +140,7 @@ export default function StudentPage() {
 
           {/* القائمة الجانبية للموبايل */}
           <button
-            className="sm:hidden p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="sm:hidden p-2 rounded-xl hover:bg-black/5 transition-colors"
             style={{ color: C.textP }}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
@@ -144,24 +151,30 @@ export default function StudentPage() {
 
       {/* ════════════ القائمة المنسدلة للموبايل ════════════ */}
       {isMobileMenuOpen && (
-        <div 
-          className={`sm:hidden absolute left-0 right-0 top-[65px] z-40 p-4 border-b shadow-lg animate-[fadeUp_0.2s_ease-out_both]`}
+        <div
+          className="sm:hidden absolute left-0 right-0 top-[65px] z-40 p-4 border-b shadow-lg animate-[fadeUp_0.2s_ease-out_both]"
           style={{ backgroundColor: C.nav, borderColor: C.border }}
         >
           <div className="flex flex-col gap-4">
-            <Link href="#" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link
+              href="#"
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5"
+              style={{ color: C.textP }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
               <LayoutDashboard className="w-5 h-5" />
               <span className="font-semibold text-sm">الرئيسية</span>
             </Link>
-            <Link href="#" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
-              <BookOpen className="w-5 h-5" />
-              <span className="font-semibold text-sm">مقرراتي</span>
+            <Link
+              href="/student/exams"
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5"
+              style={{ color: C.textP }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <ClipboardList className="w-5 h-5" />
+              <span className="font-semibold text-sm">الاختبارات</span>
             </Link>
-            <Link href="/student/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }} onClick={() => setIsMobileMenuOpen(false)}>
-              <User className="w-5 h-5" />
-              <span className="font-semibold text-sm">حسابي ({getFirstName()})</span>
-            </Link>
-            <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5" style={{ color: C.textP }}>
+            <div className="flex items-center gap-3 p-2 rounded-xl" style={{ color: C.textP }}>
               <span className="font-semibold text-sm flex-1">المظهر</span>
               <ThemeToggle />
             </div>
@@ -189,17 +202,20 @@ export default function StudentPage() {
               منصة SMS التعليمية
             </p>
             <h2 className="text-2xl sm:text-4xl font-extrabold mb-3 text-[#FFFAF3] leading-snug">
-              مرحباً بك {getFirstName()} 🎓
+              {getFirstName()} 👋
             </h2>
             <p className="text-[#A8C8E8]/90 text-sm sm:text-base mb-7 leading-relaxed">
-              تابع مقرراتك، واطّلع على جدولك الدراسي، وراجع درجاتك — كل ذلك في مكان واحد.
+              تابع مستواك الأكاديمي، أجرِ الاختبارات المطلوبة، واطلع على نتائجك أولاً بأول.
             </p>
-            <Link href="/student/profile">
-              <button className="bg-[#FFF2DB] text-[#0A2947] px-7 py-3 rounded-xl font-extrabold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-sm sm:text-base cursor-pointer">
-                عرض ملفي الشخصي
+            {/* زر رئيسي */}
+            <Link href="/student/exams">
+              <button className="bg-[#FFF2DB] text-[#0A2947] px-7 py-3 rounded-xl font-extrabold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-sm sm:text-base cursor-pointer flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                تصفح الاختبارات
               </button>
             </Link>
           </div>
+
           {/* دوائر زخرفية */}
           <div className="absolute -left-16 -top-16 w-72 h-72 bg-[#A8C8E8] rounded-full opacity-10 pointer-events-none" />
           <div className="absolute -right-20 -bottom-20 w-96 h-96 bg-[#FFF2DB] rounded-full opacity-5 pointer-events-none" />
@@ -207,31 +223,40 @@ export default function StudentPage() {
 
         {/* ── عنوان الشبكة ── */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl sm:text-2xl font-extrabold" style={{ color: C.textP }}>الوصول السريع</h3>
-          <span className="text-xs" style={{ color: C.textM }}>{quickAccess.length} خدمة</span>
+          <h3 className="text-xl sm:text-2xl font-extrabold" style={{ color: C.textP }}>
+            الوصول السريع
+          </h3>
+          <span className="text-xs" style={{ color: C.textM }}>
+            {quickAccess.length} خدمة
+          </span>
         </div>
 
         {/* ── شبكة البطاقات ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {quickAccess.map((item, i) => {
             const Icon = item.icon;
             return (
-              <Link key={i} href={item.href} className="group block" style={{ animationDelay: `${i * 0.05}s` }}>
+              <Link
+                key={i}
+                href={item.href}
+                className="group block"
+                style={{ animationDelay: `${i * 0.05}s` }}
+              >
                 <div
-                  className={`rounded-2xl p-5 h-full flex flex-col gap-3 ${tr} animate-[fadeUp_0.45s_ease-out_both] group-hover:-translate-y-1`}
+                  className={`rounded-2xl p-5 h-full flex flex-col gap-3 transition-all duration-300 animate-[fadeUp_0.45s_ease-out_both] group-hover:-translate-y-1`}
                   style={{
-                    backgroundColor: C.card,
-                    border: `2px solid ${C.border}`,
+                    backgroundColor: item.highlight ? "#0A2947" : C.card,
+                    border: `2px solid ${item.highlight ? "#0A2947" : C.border}`,
                     boxShadow: C.cardSh,
                   }}
                   onMouseEnter={e => {
                     const el = e.currentTarget as HTMLDivElement;
-                    el.style.borderColor = C.borderA;
+                    el.style.borderColor = item.highlight ? "#A8C8E8" : C.borderA;
                     el.style.boxShadow   = C.cardHovSh;
                   }}
                   onMouseLeave={e => {
                     const el = e.currentTarget as HTMLDivElement;
-                    el.style.borderColor = C.border;
+                    el.style.borderColor = item.highlight ? "#0A2947" : C.border;
                     el.style.boxShadow   = C.cardSh;
                   }}
                 >
@@ -239,16 +264,37 @@ export default function StudentPage() {
                   <div className="flex items-start justify-between">
                     <div
                       className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundColor: C.icon }}
+                      style={{
+                        backgroundColor: item.highlight ? "rgba(168,200,232,0.2)" : C.icon,
+                      }}
                     >
-                      <Icon className="w-6 h-6 sm:w-7 sm:h-7" style={{ color: C.textP }} />
+                      <Icon
+                        className="w-6 h-6 sm:w-7 sm:h-7"
+                        style={{ color: item.highlight ? "#A8C8E8" : C.textP }}
+                      />
                     </div>
-                    <ChevronLeft className="w-5 h-5 mt-1 transition-colors group-hover:text-[#A8C8E8]" style={{ color: C.textM }} />
+                    <div className="flex items-center gap-2">
+                      <ChevronLeft
+                        className="w-5 h-5 mt-1 transition-colors group-hover:text-[#A8C8E8]"
+                        style={{ color: item.highlight ? "#A8C8E8" : C.textM }}
+                      />
+                    </div>
                   </div>
+
                   {/* نص البطاقة */}
                   <div>
-                    <h4 className="text-base font-extrabold mb-1" style={{ color: C.textP }}>{item.title}</h4>
-                    <p className="text-xs sm:text-sm leading-relaxed" style={{ color: C.textS }}>{item.desc}</p>
+                    <h4
+                      className="text-base font-extrabold mb-1"
+                      style={{ color: item.highlight ? "#FFFAF3" : C.textP }}
+                    >
+                      {item.title}
+                    </h4>
+                    <p
+                      className="text-xs sm:text-sm leading-relaxed"
+                      style={{ color: item.highlight ? "#A8C8E8" : C.textS }}
+                    >
+                      {item.desc}
+                    </p>
                   </div>
                 </div>
               </Link>
@@ -256,7 +302,6 @@ export default function StudentPage() {
           })}
         </div>
       </main>
-
     </div>
   );
 }

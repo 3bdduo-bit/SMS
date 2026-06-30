@@ -1,7 +1,7 @@
 "use client";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   صفحة الملف الشخصي  /student/profile
+   صفحة الملف الشخصي للمعلم  /teacher/profile
 
    - GET /user/profile بـ JWT token
    - دعم الوضع الليلي عبر useTheme Context
@@ -97,7 +97,7 @@ export default function ProfilePage() {
         className={`px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-50 ${tr}`}
         style={{ backgroundColor: C.nav, borderBottom: `1px solid ${C.border}`, boxShadow: C.navShadow }}
       >
-        <Link href="/student" className="flex items-center gap-2 font-semibold text-sm group" style={{ color: C.textP }}>
+        <Link href="/teacher" className="flex items-center gap-2 font-semibold text-sm group" style={{ color: C.textP }}>
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /> العودة
         </Link>
         <div className="flex items-center gap-2">
@@ -107,10 +107,6 @@ export default function ProfilePage() {
           <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>الملف الشخصي</span>
         </div>
         <div className="flex items-center gap-2">
-          {/* رابط صفحة الاختبارات */}
-          <Link href="/student/exams" className="hidden sm:flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl transition-all hover:-translate-y-0.5" style={{ color: C.textS, backgroundColor: C.icon }}>
-            <ClipboardList className="w-4 h-4" /> الاختبارات
-          </Link>
           <ThemeToggle />
           <button onClick={handleLogout} className="flex items-center gap-1.5 text-red-500 hover:text-red-700 font-semibold text-sm transition-colors px-3 py-2 rounded-xl hover:bg-red-50">
             <LogOut className="w-4 h-4" /><span className="hidden sm:inline">خروج</span>

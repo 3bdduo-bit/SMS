@@ -100,8 +100,21 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(userObj));
       }
 
-      setSuccess("تم تسجيل الدخول بنجاح! جارٍ التحويل…");
-      setTimeout(() => router.push("/student"), 600);
+      let role = "";
+      try {
+        if (token) {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          role = payload?.role?.toLowerCase() || "";
+        }
+      } catch (e) {
+        console.error("Failed to parse token", e);
+      }
+
+      if (role === "teacher" || role === "admin" || role === "instructor") {
+        setTimeout(() => router.push("/teacher"), 600);
+      } else {
+        setTimeout(() => router.push("/student"), 600);
+      }
     } catch (err: unknown) {
       setErrors({ general: err instanceof Error ? err.message : "حدث خطأ غير متوقع." });
     } finally {

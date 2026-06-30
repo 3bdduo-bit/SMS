@@ -40,8 +40,6 @@ export default function EditProfilePage() {
   const tr         = "transition-all duration-300 ease-in-out";
 
   /* ── بيانات النموذج ── */
-  const [fullName, setFullName]               = useState("");
-  const [phone, setPhone]                     = useState("");
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword]       = useState(false);
@@ -54,15 +52,13 @@ export default function EditProfilePage() {
   const [success, setSuccess]               = useState("");
   const [errors, setErrors]                 = useState<FormErrors>({});
 
-  /* ── جلب البيانات الحالية لملء الحقول ── */
+  /* ── جلب البيانات الحالية للتحقق (اختياري) ── */
   const fetchAndFill = useCallback(async () => {
     setLoadingProfile(true); setFetchError("");
     try {
-      const data: UserProfile = await getProfile();
-      setFullName(data.fullName || data.name || "");
-      setPhone(data.phoneNumber || data.phone || "");
+      await getProfile(); // Just to verify token is valid and user exists
     } catch (err: unknown) {
-      setFetchError(err instanceof Error ? err.message : "فشل في جلب البيانات.");
+      setFetchError(err instanceof Error ? err.message : "فشل في التحقق من الحساب.");
     } finally { setLoadingProfile(false); }
   }, []);
 
@@ -74,9 +70,9 @@ export default function EditProfilePage() {
   /* ── التحقق من الحقول ── */
   const validate = (): boolean => {
     const e: FormErrors = {};
-    if (phone   && !/^[\d+\-\s()]{7,20}$/.test(phone))              e.phone           = "رقم الهاتف غير صالح.";
-    if (password && password.length < 6)                              e.password        = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
-    if (password && password !== confirmPassword)                     e.confirmPassword = "كلمتا المرور غير متطابقتان.";
+    if (!password)                                                    e.password        = "كلمة المرور مطلوبة.";
+    else if (password.length < 6)                                     e.password        = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
+    if (password !== confirmPassword)                                 e.confirmPassword = "كلمتا المرور غير متطابقتان.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -86,17 +82,12 @@ export default function EditProfilePage() {
     ev.preventDefault(); setSuccess(""); setErrors({});
     if (!validate()) return;
 
-    const payload: Record<string, string> = {};
-    if (fullName.trim()) payload.fullName    = fullName.trim();
-    if (phone.trim())    payload.phoneNumber = phone.trim();
-    if (password)        payload.password    = password;
-
-    if (!Object.keys(payload).length) { setErrors({ general: "لم تقم بأي تعديلات." }); return; }
+    const payload: Record<string, string> = { password };
 
     setSubmitting(true);
     try {
       await updateUser(payload);
-      setSuccess("تم تحديث بياناتك بنجاح!");
+      setSuccess("تم تغيير كلمة المرور بنجاح!");
       setPassword(""); setConfirmPassword("");
       setTimeout(() => router.push("/student/profile"), 2000);
     } catch (err: unknown) {
@@ -144,7 +135,7 @@ export default function EditProfilePage() {
           <div className="w-9 h-9 rounded-xl bg-[#0A2947] flex items-center justify-center shadow-md">
             <GraduationCap className="text-[#A8C8E8] w-5 h-5" />
           </div>
-          <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>تعديل الملف الشخصي</span>
+          <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>تغيير كلمة المرور</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -159,8 +150,8 @@ export default function EditProfilePage() {
 
         {/* ── ترويسة ── */}
         <div className="mb-8 text-center sm:text-right">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: C.textP }}>تعديل بياناتك الشخصية</h1>
-          <p className="text-sm" style={{ color: C.textM }}>عدّل المعلومات التي تريد تغييرها فقط.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: C.textP }}>تغيير كلمة المرور</h1>
+          <p className="text-sm" style={{ color: C.textM }}>قم بتعيين كلمة مرور جديدة لحسابك.</p>
         </div>
 
         {/* ── بطاقة النموذج ── */}
@@ -181,19 +172,6 @@ export default function EditProfilePage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
-            {/* ── المعلومات الشخصية ── */}
-            <SectionTitle C={C} title="المعلومات الشخصية" />
-
-            <FormField C={C} id="edit-fullname" label="الاسم الكامل"         icon={User}  value={fullName} onChange={setFullName} error={errors.fullName} placeholder="محمد أحمد" />
-            <FormField C={C} id="edit-phone"    label="رقم الهاتف"            icon={Phone} value={phone}    onChange={setPhone}    error={errors.phone}    placeholder="+20 1xx xxx xxxx" type="tel" ltr />
-
-            {/* ── فاصل كلمة المرور ── */}
-            <div className="flex items-center gap-3 py-2">
-              <div className="flex-1 h-px" style={{ backgroundColor: C.border }} />
-              <span className="text-xs font-medium" style={{ color: C.textM }}>تغيير كلمة المرور (اختياري)</span>
-              <div className="flex-1 h-px" style={{ backgroundColor: C.border }} />
-            </div>
 
             <PasswordField C={C} id="edit-password" label="كلمة المرور الجديدة" value={password}        onChange={setPassword}        error={errors.password}        show={showPassword} onToggle={() => setShowPassword(p => !p)} />
             <PasswordField C={C} id="edit-confirm"   label="تأكيد كلمة المرور"   value={confirmPassword} onChange={setConfirmPassword} error={errors.confirmPassword} show={showConfirm}  onToggle={() => setShowConfirm(p => !p)} />
