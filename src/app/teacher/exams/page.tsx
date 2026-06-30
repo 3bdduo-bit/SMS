@@ -22,7 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { getProfile, UserProfile } from "@/lib/api/user";
-import { createExam, deleteExam, getExam, getTeacherExams, Exam, ExamQuestion, activeExam, getExamResults } from "@/lib/api/exams";
+import { createExamWithQuestions, addQuestionsToExam, deleteExam, getExam, getTeacherExams, Exam, ExamQuestion, activeExam, getExamResults } from "@/lib/api/exams";
 import { LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
@@ -189,7 +189,13 @@ export default function TeacherExamsPage() {
     setCreating(true);
     try {
       if (editingExamId) {
-        /* تحديث محلي فقط في الـ state لحين إضافة API تعديل */
+        /* تحديث الأسئلة على السيرفر عبر API */
+        try {
+          await addQuestionsToExam(editingExamId, { questions: formQuestions });
+        } catch (err) {
+          console.error("فشل تحديث الأسئلة:", err);
+        }
+        /* تحديث القائمة المحلية */
         setExams(prev => prev.map(ex => ex._id === editingExamId ? {
           ...ex,
           title: formTitle.trim(),
@@ -201,14 +207,17 @@ export default function TeacherExamsPage() {
         } : ex));
         alert("تم تعديل الاختبار بنجاح!");
       } else {
-        const exam = await createExam({
-          title:     formTitle.trim(),
-          level:     formLevel || undefined,
-          startAt:   new Date(formDate).toISOString(),
-          endAt:     formEndDate ? new Date(formEndDate).toISOString() : undefined,
-          duration:  computedDuration,
-          questions: formQuestions,
-        });
+        /* خطوتان: 1) إنشاء الاختبار  2) إضافة الأسئلة */
+        const exam = await createExamWithQuestions(
+          {
+            title:    formTitle.trim(),
+            level:    formLevel || undefined,
+            startAt:  new Date(formDate).toISOString(),
+            endAt:    formEndDate ? new Date(formEndDate).toISOString() : undefined,
+            duration: computedDuration,
+          },
+          formQuestions,
+        );
 
         /* إضافة الاختبار مباشرة للقائمة */
         setExams(prev => [exam, ...prev]);

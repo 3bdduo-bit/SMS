@@ -1,15 +1,16 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/lib/api/exams.ts
-   دوال API الخاصة بالاختبارات — بدون أي localStorage
+   دوال API الخاصة بالاختبارات — بدون أي localStorage لبيانات الاختبارات
 
-   الـ APIs المدعومة:
-     POST   /exam              — إنشاء اختبار جديد (المعلم)
-     GET    /exam/teacher      — جلب اختبارات المعلم
-     GET    /exam/:id          — جلب اختبار بمعرّفه
-     DELETE /exam/:id          — حذف اختبار (المعلم)
-     POST   /exam/solve/:id    — تسليم إجابات الطالب
-     PUT    /exam/active/:id   — تفعيل / إيقاف الاختبار (المعلم)
-     GET    /exam/result/:id   — جلب جميع نتائج الاختبار (المعلم)
+   الـ APIs المدعومة (بالترتيب الصحيح):
+     POST   /exam                  — إنشاء اختبار جديد (بدون أسئلة)
+     POST   /exam/questions/:id    — إضافة أسئلة للاختبار بعد إنشائه
+     GET    /exam/teacher          — جلب اختبارات المعلم
+     GET    /exam/:id              — جلب اختبار بمعرّفه (يشمل الأسئلة)
+     DELETE /exam/:id              — حذف اختبار (المعلم)
+     POST   /exam/solve/:id        — تسليم إجابات الطالب
+     PUT    /exam/active/:id       — تفعيل / إيقاف الاختبار (المعلم)
+     GET    /exam/result/:id       — جلب جميع نتائج الاختبار (المعلم)
 ───────────────────────────────────────────────────────────────────────────── */
 
 const API_URL =
@@ -19,7 +20,7 @@ const API_URL =
 /* ── نوع السؤال الواحد ── */
 export interface ExamQuestion {
   question: string;
-  type?: "mcq" | "tf"; // "mcq" = متعدد الخيارات, "tf" = صح/خطأ
+  type?: "mcq" | "tf"; /* "mcq" = متعدد الخيارات, "tf" = صح/خطأ */
   choices: string[];
   answer: string;
 }
@@ -34,7 +35,7 @@ export interface ExamResult {
   submittedAt?: string;
 }
 
-/* ── نوع الاختبار ── */
+/* ── نوع الاختبار الكامل ── */
 export interface Exam {
   _id: string;
   title: string;
@@ -49,13 +50,17 @@ export interface Exam {
   __v?: number;
 }
 
-/* ── payload إنشاء اختبار جديد ── */
+/* ── payload إنشاء اختبار (بدون أسئلة — تُرسَل لاحقاً) ── */
 export interface CreateExamPayload {
   title: string;
   level?: string;
   startAt: string;
   endAt?: string;
   duration: number;
+}
+
+/* ── payload إضافة أسئلة للاختبار ── */
+export interface AddQuestionsPayload {
   questions: ExamQuestion[];
 }
 
@@ -77,8 +82,9 @@ function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   createExam — إنشاء اختبار جديد
+   createExam — الخطوة 1: إنشاء اختبار جديد (بيانات أساسية فقط، بدون أسئلة)
    POST /exam
+   يُرجع الاختبار المنشأ مع _id
 ────────────────────────────────────────────────────────────────────────────── */
 export async function createExam(payload: CreateExamPayload): Promise<Exam> {
   const res = await fetch(`${API_URL}/exam`, {
@@ -98,16 +104,70 @@ export async function createExam(payload: CreateExamPayload): Promise<Exam> {
   }
 
   /* استخراج الاختبار من الاستجابة */
-  const exam = data?.data?.exam ?? data?.data ?? data;
+  const exam = data?.data?.exam ?? data?.data ?? data?.exam ?? data;
+  return exam;
+}
 
-  /* نضيف الأسئلة من الـ payload لأن الـ API قد لا يُعيدها */
-  if (exam && exam._id) {
-    exam.questions = payload.questions;
-    exam.level     = payload.level || exam.level || "";
-    exam.endAt     = payload.endAt || exam.endAt || "";
+/* ────────────────────────────────────────────────────────────────────────────
+   addQuestionsToExam — الخطوة 2: إضافة أسئلة للاختبار بعد إنشائه
+   POST /exam/questions/:examId
+   يجب استدعاؤها مباشرة بعد createExam
+────────────────────────────────────────────────────────────────────────────── */
+export async function addQuestionsToExam(
+  examId: string,
+  payload: AddQuestionsPayload
+): Promise<Exam> {
+  const res = await fetch(`${API_URL}/exam/questions/${examId}`, {
+    method: "POST",
+    headers: buildHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const message =
+      data?.message ||
+      data?.errorDetails?.[0]?.message ||
+      "فشل في إضافة الأسئلة للاختبار.";
+    throw new Error(message);
   }
 
+  /* استخراج الاختبار المُحدَّث من الاستجابة */
+  const exam = data?.data?.exam ?? data?.data ?? data?.exam ?? data;
   return exam;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   createExamWithQuestions — دالة مساعدة تجمع الخطوتين في استدعاء واحد:
+   1. POST /exam         — إنشاء الاختبار
+   2. POST /exam/questions/:id — إضافة الأسئلة
+────────────────────────────────────────────────────────────────────────────── */
+export async function createExamWithQuestions(
+  examInfo: CreateExamPayload,
+  questions: ExamQuestion[]
+): Promise<Exam> {
+  /* الخطوة 1: إنشاء الاختبار */
+  const createdExam = await createExam(examInfo);
+
+  if (!createdExam?._id) {
+    throw new Error("لم يُعَد معرّف الاختبار من الـ API.");
+  }
+
+  /* الخطوة 2: إضافة الأسئلة إن وُجدت */
+  if (questions.length > 0) {
+    try {
+      const withQuestions = await addQuestionsToExam(createdExam._id, { questions });
+      /* نُعيد الاختبار مع أسئلته */
+      return withQuestions ?? { ...createdExam, questions };
+    } catch (err) {
+      /* حتى لو فشلت إضافة الأسئلة، نُعيد الاختبار المُنشأ مع تحذير */
+      console.error("فشل إضافة الأسئلة:", err);
+      return { ...createdExam, questions };
+    }
+  }
+
+  return { ...createdExam, questions: [] };
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -136,7 +196,7 @@ export async function getTeacherExams(): Promise<Exam[]> {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   getExam — جلب اختبار واحد بمعرّفه
+   getExam — جلب اختبار واحد بمعرّفه (يتضمن الأسئلة الكاملة)
    GET /exam/:id
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getExam(examId: string): Promise<Exam | null> {
@@ -156,7 +216,7 @@ export async function getExam(examId: string): Promise<Exam | null> {
   }
 
   /* استخراج الاختبار من الاستجابة */
-  const exam = data?.data?.exam ?? data?.data ?? data?.exam ?? null;
+  const exam = data?.data?.exam ?? data?.data ?? data?.exam ?? data ?? null;
   return exam;
 }
 
