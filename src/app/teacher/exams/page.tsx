@@ -6,8 +6,9 @@
 
    الميزات:
    - إنشاء اختبار جديد مع عنوان / مستوى / تاريخ / مدة / أسئلة متعددة الخيارات
-   - تسجيل الاختبارات التي أنشأها المعلم في الـ localStorage لعرضها لاحقاً
-   - عرض تفاصيل اختبار بمعرّفه من الـ API
+   - جلب قائمة اختبارات المعلم مباشرة من الـ API (بدون localStorage)
+   - تفعيل / إيقاف الاختبار عبر API
+   - عرض نتائج الطلاب من API
    - حذف اختبار
    - دعم الوضع الليلي + RTL + عربي
 ───────────────────────────────────────────────────────────────────────────── */
@@ -21,14 +22,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { getProfile, UserProfile } from "@/lib/api/user";
-import { createExam, deleteExam, getExam, Exam, ExamQuestion, saveLocalExamData } from "@/lib/api/exams";
+import { createExam, deleteExam, getExam, getTeacherExams, Exam, ExamQuestion, activeExam, getExamResults } from "@/lib/api/exams";
 import { LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
 import ThemeToggle from "@/components/ThemeToggle";
-
-/* ── مفتاح localStorage لحفظ معرّفات الاختبارات ── */
-const EXAMS_STORAGE_KEY = "teacher_exam_ids";
 
 /* ── سؤال فارغ جديد ── */
 const emptyQuestion = (): ExamQuestion => ({
@@ -47,9 +45,8 @@ export default function TeacherExamsPage() {
   /* ── بيانات المعلم ── */
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
-  /* ── قائمة الاختبارات المحفوظة ── */
-  const [examIds, setExamIds] = useState<string[]>([]);
-  const [exams, setExams] = useState<(Exam | null)[]>([]);
+  /* ── قائمة الاختبارات ── */
+  const [exams, setExams] = useState<Exam[]>([]);
   const [loadingExams, setLoadingExams] = useState(true);
 
   /* ── فتح/إغلاق نموذج الإنشاء ── */
@@ -90,45 +87,18 @@ export default function TeacherExamsPage() {
     getProfile().then(p => setProfile(p)).catch(() => {});
   }, []);
 
-  /* ── تحميل معرّفات الاختبارات من localStorage ── */
-  const loadExamIds = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(EXAMS_STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  }, []);
-
-  /* ── حفظ معرّفات الاختبارات في localStorage ── */
-  const saveExamIds = useCallback((ids: string[]) => {
-    localStorage.setItem(EXAMS_STORAGE_KEY, JSON.stringify(ids));
-  }, []);
-
-  /* ── جلب تفاصيل كل اختبار من API ── */
+  /* ── جلب اختبارات المعلم من API مباشرة ── */
   const fetchExams = useCallback(async () => {
     setLoadingExams(true);
-    const ids = loadExamIds();
-    setExamIds(ids);
-    if (ids.length === 0) {
+    try {
+      const data = await getTeacherExams();
+      setExams(data);
+    } catch {
       setExams([]);
+    } finally {
       setLoadingExams(false);
-      return;
     }
-    const results = await Promise.all(
-      ids.map(id => getExam(id).catch(() => null))
-    );
-    /* إزالة الـ ids التي لم يُوجد لها اختبار (محذوف من الـ API) */
-    const valid: string[] = [];
-    const validExams: (Exam | null)[] = [];
-    results.forEach((ex, i) => {
-      if (ex !== null) { valid.push(ids[i]); validExams.push(ex); }
-    });
-    if (valid.length !== ids.length) saveExamIds(valid);
-    setExamIds(valid);
-    setExams(validExams);
-    setLoadingExams(false);
-  }, [loadExamIds, saveExamIds]);
+  }, []);
 
   useEffect(() => { fetchExams(); }, [fetchExams]);
 
@@ -219,17 +189,8 @@ export default function TeacherExamsPage() {
     setCreating(true);
     try {
       if (editingExamId) {
-        /* تعديل محلي */
-        saveLocalExamData(editingExamId, {
-          title: formTitle.trim(),
-          level: formLevel || "",
-          startAt: new Date(formDate).toISOString(),
-          endAt: formEndDate ? new Date(formEndDate).toISOString() : "",
-          duration: computedDuration,
-          questions: formQuestions,
-        });
-        /* تحديث القائمة */
-        setExams(prev => prev.map(ex => ex?._id === editingExamId ? {
+        /* تحديث محلي فقط في الـ state لحين إضافة API تعديل */
+        setExams(prev => prev.map(ex => ex._id === editingExamId ? {
           ...ex,
           title: formTitle.trim(),
           level: formLevel || "",
@@ -249,10 +210,7 @@ export default function TeacherExamsPage() {
           questions: formQuestions,
         });
 
-        /* حفظ المعرّف محلياً */
-        const updatedIds = [exam._id, ...examIds];
-        saveExamIds(updatedIds);
-        setExamIds(updatedIds);
+        /* إضافة الاختبار مباشرة للقائمة */
         setExams(prev => [exam, ...prev]);
       }
 
@@ -306,10 +264,8 @@ export default function TeacherExamsPage() {
     setDeletingId(examId);
     try {
       await deleteExam(examId);
-      const updatedIds = examIds.filter(id => id !== examId);
-      saveExamIds(updatedIds);
-      setExamIds(updatedIds);
-      setExams(prev => prev.filter(e => e?._id !== examId));
+      /* حذف محلي من القائمة */
+      setExams(prev => prev.filter(e => e._id !== examId));
     } catch (err) {
       alert((err as Error).message || "فشل في حذف الاختبار.");
     } finally {
@@ -322,6 +278,13 @@ export default function TeacherExamsPage() {
     setViewLoading(true);
     try {
       const exam = await getExam(examId);
+      /* getExamResults تُرجع ExamResult[] مباشرة */
+      try {
+        const results = await getExamResults(examId);
+        if (exam) exam.results = results;
+      } catch (e) {
+        console.error("فشل جلب النتائج", e);
+      }
       setViewExam(exam);
     } catch {
       alert("فشل في تحميل الاختبار.");
@@ -711,23 +674,8 @@ export default function TeacherExamsPage() {
                 </div>
                 <div className="rounded-2xl p-3 text-center flex flex-col items-center justify-center relative" style={{ backgroundColor: C.icon }}>
                   <GraduationCap className="w-4 h-4 mx-auto mb-1" style={{ color: C.textM }} />
-                  <select
-                    className="text-xs font-bold bg-transparent outline-none cursor-pointer text-center appearance-none"
-                    style={{ color: C.textP }}
-                    value={viewExam.level || ""}
-                    onChange={(e) => {
-                      const newLevel = e.target.value;
-                      setViewExam({ ...viewExam, level: newLevel });
-                      setExams(exams.map(ex => ex?._id === viewExam._id ? { ...ex, level: newLevel } : ex));
-                      saveLocalExamData(viewExam._id as string, { level: newLevel });
-                    }}
-                  >
-                    <option value="">جميع المستويات</option>
-                    {LEVEL_OPTIONS.map(l => (
-                      <option key={l.value} value={l.value}>{l.label}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs mt-1" style={{ color: C.textM }}>المستوى (قابل للتعديل)</p>
+                  <p className="text-xs font-bold" style={{ color: C.textP }}>{levelLabel(viewExam.level)}</p>
+                  <p className="text-xs mt-1" style={{ color: C.textM }}>المستوى</p>
                 </div>
               </div>
 
@@ -763,26 +711,32 @@ export default function TeacherExamsPage() {
                 </div>
               )}
 
-              {/* قائمة نتائج الطلاب */}
+              {/* قائمة نتائج الطلاب من API */}
               <h4 className="font-extrabold text-sm mb-3 border-t pt-4" style={{ color: C.textP, borderColor: C.border }}>
-                نتائج الطلاب ({(viewExam as any).results?.length || 0})
+                نتائج الطلاب ({viewExam.results?.length || 0})
               </h4>
-              {!(viewExam as any).results || (viewExam as any).results.length === 0 ? (
+              {!viewExam.results || viewExam.results.length === 0 ? (
                 <p className="text-sm text-center py-6" style={{ color: C.textM }}>لم يقم أي طالب بإجراء الاختبار بعد.</p>
               ) : (
                 <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto pl-1">
                   {/* ترتيب النتائج حسب الدرجة الأعلى */}
-                  {[...(viewExam as any).results].sort((a, b) => b.score - a.score).map((r, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-2xl" style={{ backgroundColor: C.input, border: `1px solid ${C.border}` }}>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm" style={{ color: C.textP }}>{r.studentName}</span>
-                        <span className="text-xs mt-0.5" style={{ color: C.textM }}>{new Date(r.submittedAt).toLocaleString("ar-EG")}</span>
+                  {[...viewExam.results].sort((a, b) => b.score - a.score).map((r, i) => {
+                    /* اسم الطالب قد يكون في studentName أو داخل studentId إذا كان كائن */
+                    const name = r.studentName ||
+                      (typeof r.studentId === "object" ? (r.studentId as any)?.fullName || (r.studentId as any)?.userName : r.studentId) ||
+                      "طالب";
+                    return (
+                      <div key={r._id || i} className="flex items-center justify-between p-3 rounded-2xl" style={{ backgroundColor: C.input, border: `1px solid ${C.border}` }}>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm" style={{ color: C.textP }}>{String(name)}</span>
+                          {r.submittedAt && <span className="text-xs mt-0.5" style={{ color: C.textM }}>{new Date(r.submittedAt).toLocaleString("ar-EG")}</span>}
+                        </div>
+                        <div className="flex items-center justify-center w-12 h-12 rounded-xl font-extrabold text-lg shadow-sm" style={{ backgroundColor: r.score >= (r.total / 2) ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: r.score >= (r.total / 2) ? "#16a34a" : "#dc2626" }}>
+                          {r.score}/{r.total}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-center w-12 h-12 rounded-xl font-extrabold text-lg shadow-sm" style={{ backgroundColor: r.score >= (r.total / 2) ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: r.score >= (r.total / 2) ? "#16a34a" : "#dc2626" }}>
-                        {r.score}/{r.total}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -853,13 +807,24 @@ export default function TeacherExamsPage() {
                       </div>
                       {/* أزرار الإجراء */}
                       <div className="flex gap-1.5 shrink-0">
-                        <button onClick={() => handleView(exam._id)} disabled={viewLoading} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(168,200,232,0.15)", color: "#0A2947" }} title="عرض التفاصيل">
+                        <button onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await activeExam(exam._id as string);
+                            alert("تم تغيير حالة الاختبار (تفعيل / إيقاف) بنجاح!");
+                          } catch (err) {
+                            alert((err as Error).message || "فشل في تغيير حالة الاختبار.");
+                          }
+                        }} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(234,179,8,0.1)", color: "#eab308" }} title="تفعيل / إيقاف الاختبار">
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleView(exam._id as string)} disabled={viewLoading} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(168,200,232,0.15)", color: "#0A2947" }} title="عرض التفاصيل">
                           {viewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
                         </button>
-                        <button onClick={() => handleEdit(exam._id)} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a" }} title="تعديل الاختبار">
+                        <button onClick={() => handleEdit(exam._id as string)} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#16a34a" }} title="تعديل الاختبار">
                           <Pencil className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(exam._id)} disabled={isDeleting} className="p-2 rounded-xl transition-all hover:scale-110 disabled:opacity-60" style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#dc2626" }} title="حذف الاختبار">
+                        <button onClick={() => handleDelete(exam._id as string)} disabled={isDeleting} className="p-2 rounded-xl transition-all hover:scale-110 disabled:opacity-60" style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#dc2626" }} title="حذف الاختبار">
                           {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
                       </div>

@@ -20,7 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getProfile, UserProfile } from "@/lib/api/user";
-import { getExam, Exam, submitExamResult } from "@/lib/api/exams";
+import { getExam, Exam, solveExamAPI } from "@/lib/api/exams";
 import { LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
@@ -115,27 +115,27 @@ export default function StudentExamsPage() {
     
     setLoading(true);
     try {
-      // تصحيح الاختبار
-      let score = 0;
-      exam.questions.forEach((q, idx) => {
-        if (answers[idx] === q.answer) score++;
-      });
+      // إرسال الإجابات عبر الـ API
+      // نرسل الإجابات كمصفوفة مرتبة بناءً على عدد أسئلة الاختبار
+      const payload = {
+        answers: exam.questions.map((_, i) => answers[i] || "")
+      };
+      const response = await solveExamAPI(exam._id as string, payload);
       
-      const studentId = String(profile._id || profile.id || "unknown");
-      
-      await submitExamResult(exam._id, {
-        studentId,
-        studentName: displayName(profile),
-        score,
-        total: exam.questions.length,
-        submittedAt: new Date().toISOString()
-      });
+      // نفترض أن الخادم يعيد الدرجة، أو نحسبها محلياً في حالة لم يعيدها
+      let score = response?.score ?? response?.data?.score;
+      if (score === undefined) {
+        score = 0;
+        exam.questions.forEach((q, idx) => {
+          if (answers[idx] === q.answer) score++;
+        });
+      }
       
       setMyScore(score);
       setHasSubmitted(true);
       setIsTakingExam(false);
     } catch (err) {
-      alert("حدث خطأ أثناء تسليم الاختبار.");
+      alert((err as Error).message || "حدث خطأ أثناء تسليم الاختبار.");
     } finally {
       setLoading(false);
     }
