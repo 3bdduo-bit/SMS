@@ -22,7 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { getProfile, UserProfile } from "@/lib/api/user";
-import { createExamWithQuestions, addQuestionsToExam, deleteExam, getExam, getTeacherExams, Exam, ExamQuestion, activeExam, getExamResults } from "@/lib/api/exams";
+import { createExamWithQuestions, addQuestionsToExam, deleteExam, getExam, getTeacherExams, Exam, ExamQuestion, activeExam, getExamResults, isExamActive } from "@/lib/api/exams";
 import { LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
@@ -208,7 +208,7 @@ export default function TeacherExamsPage() {
         alert("تم تعديل الاختبار بنجاح!");
       } else {
         /* خطوتان: 1) إنشاء الاختبار  2) إضافة الأسئلة */
-        const exam = await createExamWithQuestions(
+        await createExamWithQuestions(
           {
             title:    formTitle.trim(),
             level:    formLevel || undefined,
@@ -219,8 +219,8 @@ export default function TeacherExamsPage() {
           formQuestions,
         );
 
-        /* إضافة الاختبار مباشرة للقائمة */
-        setExams(prev => [exam, ...prev]);
+        /* إعادة جلب القائمة من السيرفر لضمان صحة البيانات */
+        await fetchExams();
       }
 
       /* إعادة تعيين النموذج */
@@ -264,6 +264,20 @@ export default function TeacherExamsPage() {
       setShowForm(true);
     } catch {
       alert("فشل في جلب بيانات الاختبار للتعديل.");
+    }
+  };
+
+  /* ── تفعيل / إيقاف اختبار ── */
+  const handleToggleActive = async (exam: Exam) => {
+    const id = exam._id as string;
+    const nextActive = !isExamActive(exam);
+    try {
+      await activeExam(id, nextActive);
+      setExams(prev => prev.map(e =>
+        e._id === id ? { ...e, isActive: nextActive } : e
+      ));
+    } catch (err) {
+      alert((err as Error).message || "فشل في تغيير حالة الاختبار.");
     }
   };
 
@@ -730,18 +744,22 @@ export default function TeacherExamsPage() {
                 <div className="flex flex-col gap-2 max-h-[30vh] overflow-y-auto pl-1">
                   {/* ترتيب النتائج حسب الدرجة الأعلى */}
                   {[...viewExam.results].sort((a, b) => b.score - a.score).map((r, i) => {
-                    /* اسم الطالب قد يكون في studentName أو داخل studentId إذا كان كائن */
                     const name = r.studentName ||
-                      (typeof r.studentId === "object" ? (r.studentId as any)?.fullName || (r.studentId as any)?.userName : r.studentId) ||
+                      (typeof r.studentId === "object"
+                        ? (r.studentId as { fullName?: string; userName?: string })?.fullName
+                          || (r.studentId as { userName?: string })?.userName
+                        : r.studentId) ||
                       "طالب";
+                    const total = r.total || viewExam.questions?.length || 0;
+                    const passed = total > 0 && r.score >= total / 2;
                     return (
                       <div key={r._id || i} className="flex items-center justify-between p-3 rounded-2xl" style={{ backgroundColor: C.input, border: `1px solid ${C.border}` }}>
                         <div className="flex flex-col">
                           <span className="font-bold text-sm" style={{ color: C.textP }}>{String(name)}</span>
                           {r.submittedAt && <span className="text-xs mt-0.5" style={{ color: C.textM }}>{new Date(r.submittedAt).toLocaleString("ar-EG")}</span>}
                         </div>
-                        <div className="flex items-center justify-center w-12 h-12 rounded-xl font-extrabold text-lg shadow-sm" style={{ backgroundColor: r.score >= (r.total / 2) ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: r.score >= (r.total / 2) ? "#16a34a" : "#dc2626" }}>
-                          {r.score}/{r.total}
+                        <div className="flex items-center justify-center min-w-[3rem] h-12 px-2 rounded-xl font-extrabold text-lg shadow-sm" style={{ backgroundColor: passed ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: passed ? "#16a34a" : "#dc2626" }}>
+                          {r.score}/{total || "—"}
                         </div>
                       </div>
                     );
@@ -795,6 +813,16 @@ export default function TeacherExamsPage() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-extrabold text-base leading-snug truncate" style={{ color: C.textP }}>{exam.title}</h4>
                         <div className="flex flex-col gap-1.5 mt-2">
+                          {/* حالة التفعيل */}
+                          <span
+                            className="inline-block self-start text-xs px-2.5 py-1 rounded-xl font-bold"
+                            style={{
+                              backgroundColor: isExamActive(exam) ? "rgba(34,197,94,0.12)" : "rgba(234,179,8,0.12)",
+                              color: isExamActive(exam) ? "#16a34a" : "#ca8a04",
+                            }}
+                          >
+                            {isExamActive(exam) ? "مفعّل" : "غير مفعّل"}
+                          </span>
                           <span className="inline-block self-start text-xs px-2.5 py-1 rounded-xl font-bold" style={{ backgroundColor: "rgba(168,200,232,0.2)", color: "#0A2947" }}>
                             {levelLabel(exam.level)}
                           </span>
@@ -816,15 +844,15 @@ export default function TeacherExamsPage() {
                       </div>
                       {/* أزرار الإجراء */}
                       <div className="flex gap-1.5 shrink-0">
-                        <button onClick={async (e) => {
-                          e.stopPropagation();
-                          try {
-                            await activeExam(exam._id as string);
-                            alert("تم تغيير حالة الاختبار (تفعيل / إيقاف) بنجاح!");
-                          } catch (err) {
-                            alert((err as Error).message || "فشل في تغيير حالة الاختبار.");
-                          }
-                        }} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(234,179,8,0.1)", color: "#eab308" }} title="تفعيل / إيقاف الاختبار">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleToggleActive(exam); }}
+                          className="p-2 rounded-xl transition-all hover:scale-110"
+                          style={{
+                            backgroundColor: isExamActive(exam) ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)",
+                            color: isExamActive(exam) ? "#dc2626" : "#16a34a",
+                          }}
+                          title={isExamActive(exam) ? "إيقاف الاختبار" : "تفعيل الاختبار"}
+                        >
                           <Check className="w-4 h-4" />
                         </button>
                         <button onClick={() => handleView(exam._id as string)} disabled={viewLoading} className="p-2 rounded-xl transition-all hover:scale-110" style={{ backgroundColor: "rgba(168,200,232,0.15)", color: "#0A2947" }} title="عرض التفاصيل">
@@ -847,7 +875,7 @@ export default function TeacherExamsPage() {
                       </div>
                       <div className="rounded-xl p-2 text-center" style={{ backgroundColor: C.icon }}>
                         <HelpCircle className="w-3.5 h-3.5 mx-auto mb-0.5" style={{ color: C.textM }} />
-                        <p className="text-xs font-bold" style={{ color: C.textP }}>{exam.questions.length} سؤال</p>
+                        <p className="text-xs font-bold" style={{ color: C.textP }}>{exam.questions?.length ?? 0} سؤال</p>
                       </div>
                       <div className="rounded-xl p-2 text-center" style={{ backgroundColor: C.icon }}>
                         <Calendar className="w-3.5 h-3.5 mx-auto mb-0.5" style={{ color: C.textM }} />

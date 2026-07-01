@@ -20,7 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getProfile, UserProfile } from "@/lib/api/user";
-import { getExam, Exam, solveExamAPI } from "@/lib/api/exams";
+import { getExam, Exam, solveExamAPI, buildSolvePayload, extractScoreFromSolveResponse, isExamActive } from "@/lib/api/exams";
 import { LEVEL_OPTIONS } from "@/lib/api/students";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors } from "@/lib/theme/colors";
@@ -41,6 +41,7 @@ export default function StudentExamsPage() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [myScore, setMyScore] = useState<number | null>(null);
+  const [myTotal, setMyTotal] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,17 +75,42 @@ export default function StudentExamsPage() {
     setIsTakingExam(false);
     setHasSubmitted(false);
     setMyScore(null);
+    setMyTotal(null);
     setAnswers({});
     try {
       const result = await getExam(id);
       if (!result) return setError("لم يُوجد اختبار بهذا المعرّف.");
-      
-      // التحقق مما إذا كان الطالب قد أجرى الاختبار مسبقاً
-      if (profile && (result as any).results) {
-        const existingResult = (result as any).results.find((r: any) => r.studentId === profile._id || r.studentId === profile.id);
+
+      /* التحقق من تفعيل الاختبار */
+      if (!isExamActive(result)) {
+        return setError("هذا الاختبار غير مفعّل بعد. اطلب من معلمك تفعيله.");
+      }
+
+      /* التحقق من وقت البدء */
+      if (result.startAt && new Date(result.startAt) > new Date()) {
+        return setError(`الاختبار لم يبدأ بعد. يبدأ في: ${formatDate(result.startAt)}`);
+      }
+
+      /* التحقق من وقت الانتهاء */
+      if (result.endAt && new Date(result.endAt) < new Date()) {
+        return setError("انتهى وقت هذا الاختبار.");
+      }
+
+      if (!result.questions?.length) {
+        return setError("هذا الاختبار لا يحتوي على أسئلة بعد.");
+      }
+
+      /* التحقق مما إذا كان الطالب قد أجرى الاختبار مسبقاً */
+      if (profile && result.results) {
+        const profileId = String(profile._id ?? profile.id ?? "");
+        const existingResult = result.results.find(r => {
+          const sid = typeof r.studentId === "object" ? r.studentId?._id : r.studentId;
+          return String(sid) === profileId;
+        });
         if (existingResult) {
           setHasSubmitted(true);
           setMyScore(existingResult.score);
+          setMyTotal(existingResult.total || result.questions.length);
         }
       }
       setExam(result);
@@ -98,6 +124,10 @@ export default function StudentExamsPage() {
   /* ── بدء الاختبار ── */
   const startExam = () => {
     if (hasSubmitted) return;
+    if (exam && !isExamActive(exam)) {
+      setError("هذا الاختبار غير مفعّل. لا يمكن البدء.");
+      return;
+    }
     setIsTakingExam(true);
   };
 
@@ -109,33 +139,36 @@ export default function StudentExamsPage() {
   /* ── تسليم الاختبار ── */
   const submitExam = async () => {
     if (!exam || !profile) return;
+
+    /* التأكد من وجود معرّفات للأسئلة */
+    const missingIds = exam.questions.some(q => !q._id);
+    if (missingIds) {
+      setError("تعذّر تسليم الاختبار: بيانات الأسئلة غير مكتملة. أعد تحميل الاختبار.");
+      return;
+    }
+
     if (Object.keys(answers).length < exam.questions.length) {
       if (!window.confirm("لم تقم بالإجابة على جميع الأسئلة. هل أنت متأكد من التسليم الآن؟")) return;
     }
-    
+
+    const solveAnswers = buildSolvePayload(exam.questions, answers);
+    if (solveAnswers.length === 0) {
+      setError("يرجى الإجابة على سؤال واحد على الأقل قبل التسليم.");
+      return;
+    }
+
     setLoading(true);
+    setError(null);
     try {
-      // إرسال الإجابات عبر الـ API
-      // نرسل الإجابات كمصفوفة مرتبة بناءً على عدد أسئلة الاختبار
-      const payload = {
-        answers: exam.questions.map((_, i) => answers[i] || "")
-      };
-      const response = await solveExamAPI(exam._id as string, payload);
-      
-      // نفترض أن الخادم يعيد الدرجة، أو نحسبها محلياً في حالة لم يعيدها
-      let score = response?.score ?? response?.data?.score;
-      if (score === undefined) {
-        score = 0;
-        exam.questions.forEach((q, idx) => {
-          if (answers[idx] === q.answer) score++;
-        });
-      }
-      
+      const response = await solveExamAPI(exam._id as string, { answers: solveAnswers });
+      const { score, total } = extractScoreFromSolveResponse(response, exam.questions.length);
+
       setMyScore(score);
+      setMyTotal(total);
       setHasSubmitted(true);
       setIsTakingExam(false);
     } catch (err) {
-      alert((err as Error).message || "حدث خطأ أثناء تسليم الاختبار.");
+      setError((err as Error).message || "حدث خطأ أثناء تسليم الاختبار.");
     } finally {
       setLoading(false);
     }
@@ -298,7 +331,7 @@ export default function StudentExamsPage() {
                   لقد أتممت هذا الاختبار وسُجلت نتيجتك.
                 </p>
                 <div className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-2xl font-black shadow-sm" style={{ backgroundColor: C.card, border: `2px solid ${C.border}`, color: C.textP }}>
-                  {myScore} <span className="text-lg opacity-50">/</span> {exam.questions.length}
+                  {myScore} <span className="text-lg opacity-50">/</span> {myTotal ?? exam.questions.length}
                 </div>
               </div>
             ) : isTakingExam ? (

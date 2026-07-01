@@ -9,10 +9,7 @@
    كل طلب يرسل JWT token من localStorage في الـ Authorization header
 ───────────────────────────────────────────────────────────────────────────── */
 
-/** رابط الـ API الأساسي */
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://educationplatform2-production.up.railway.app";
+import { API_URL } from "./config";
 
 /* ── نوع بيانات الطالب المُرجَعة من الـ API ── */
 export interface Student {
