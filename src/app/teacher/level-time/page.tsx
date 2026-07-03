@@ -28,12 +28,22 @@ import {
   updateLevelTime,
   deleteLevelTime,
   LevelTime,
-  LevelTimePayload,
   LEVEL_OPTIONS,
   DAY_OPTIONS,
   getLevelLabel,
   getDayLabel
 } from "@/lib/api/levelTime";
+
+/* ════════════════════════════════════════════════════════════════════════════
+   أنواع البيانات المحلية
+════════════════════════════════════════════════════════════════════════════ */
+
+interface LevelTimeFormData {
+  level: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+}
 
 /* ════════════════════════════════════════════════════════════════════════════
    المكوّن الرئيسي
@@ -50,7 +60,7 @@ export default function LevelTimePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   /* ── نموذج الإضافة/التعديل ── */
-  const [formData, setFormData] = useState<LevelTimePayload>({
+  const [formData, setFormData] = useState<LevelTimeFormData>({
     level: "",
     day: "",
     startTime: "",
@@ -104,9 +114,9 @@ export default function LevelTimePage() {
   const handleEdit = (levelTime: LevelTime) => {
     setFormData({
       level: selectedLevel || levelTime.level,
-      day: levelTime.day,
-      startTime: levelTime.startTime,
-      endTime: levelTime.endTime,
+      day: levelTime.day || "",
+      startTime: levelTime.startTime || "",
+      endTime: levelTime.endTime || "",
     });
     setEditingId(levelTime._id || levelTime.id?.toString() || "");
     setShowAddForm(true);
@@ -115,7 +125,6 @@ export default function LevelTimePage() {
   /* ── اختيار مستوى للعرض التفصيلي ── */
   const handleSelectLevel = (level: string) => {
     setSelectedLevel(level);
-    // إغلاق أي نموذج مفتوح
     setShowAddForm(false);
     setEditingId(null);
     setFormData({
@@ -154,15 +163,22 @@ export default function LevelTimePage() {
   /* ── حفظ الإضافة/التعديل ── */
   const handleSave = async () => {
     try {
+      const _payload = {
+        level: formData.level,
+        day: formData.day,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+      };
+
       if (editingId) {
-        await updateLevelTime(editingId, formData);
+        await updateLevelTime(editingId, _payload);
       } else {
-        await addLevelTime(formData);
+        await addLevelTime(_payload);
       }
       await loadLevelTimes();
       resetForm();
     } catch (error) {
-      console.error("_failed to save level time:", error);
+      console.error("Failed to save level time:", error);
       const errorMessage = error instanceof Error ? error.message : "فشل في حفظ وقت المستوى";
       alert(errorMessage);
     }
@@ -682,7 +698,7 @@ export default function LevelTimePage() {
                           >
                             <div
                               className="w-10 h-10 rounded-xl flex items-center justify-center"
-                              style={{ backgroundColor: C.icon }}
+                              style={{ backgroundColor: "rgba(168,200,232,0.2)" }}
                             >
                               <Clock className="w-5 h-5" style={{ color: C.textP }} />
                             </div>

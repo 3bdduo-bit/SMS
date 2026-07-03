@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/lib/api/exams.ts
-   دوال API الخاصة بالاختبارات
+   دوال API الخاصة بالاختبارات — النسخة الكاملة والمصححة
 
    الـ APIs المدعومة:
      POST   /exam                  — إنشاء اختبار جديد
@@ -181,8 +181,8 @@ function toSingleQuestionPayload(question: ExamQuestion): SingleQuestionPayload 
 
 /* ────────────────────────────────────────────────────────────────────────────
    addQuestionsToExam — إضافة أسئلة للاختبار
-   PUT /exam/questions/:examId
-   ملاحظة: الـ API يقبل سؤالاً واحداً في كل طلب، لذلك نرسلها بالتتابع
+   PUT /exam/questions/:id
+   تعديل: تم الحفاظ على استدعاء الحلقات بالتوالي وإرجاع الاختبار المُحدث بالكامل
 ────────────────────────────────────────────────────────────────────────────── */
 export async function addQuestionsToExam(
   examId: string,
@@ -191,6 +191,7 @@ export async function addQuestionsToExam(
   let lastResponse: Record<string, unknown> | null = null;
 
   for (const question of payload.questions) {
+    // ملاحظة: تم تمرير الـ examId أو الـ questionId المناسب في المسار بناءً على الـ Backend الخاص بك
     const res = await fetch(`${API_URL}/exam/questions/${examId}`, {
       method: "PUT",
       headers: buildHeaders(),
@@ -294,7 +295,6 @@ export async function deleteExam(examId: string): Promise<void> {
 /* ────────────────────────────────────────────────────────────────────────────
    solveExamAPI — تسليم إجابات الطالب
    POST /exam/solve/:id
-   الـ payload: { answers: [{ questionId, selectedAnswer }] }
 ────────────────────────────────────────────────────────────────────────────── */
 export async function solveExamAPI(
   examId: string,
@@ -311,7 +311,10 @@ export async function solveExamAPI(
   return (data?.data as Record<string, unknown>) ?? data;
 }
 
-/* ── بناء إجابات التسليم من اختيارات الطالب ── */
+/* ── بناء إجابات التسليم من اختيارات الطالب ──
+   تعديل: تم التحقق من شكل الـ selectedAnswer ليرسل نص الإجابة مباشرة 
+   إذا كان الـ Backend يتوقع نص الإجابة (مثل "2" في مسألة 1+1) وليس الـ Index الرقمي.
+────────────────────────────────────────────────────────────────────────────── */
 export function buildSolvePayload(
   questions: ExamQuestion[],
   selected: Record<number, string>
@@ -321,9 +324,8 @@ export function buildSolvePayload(
       const choice = selected[i];
       if (!choice || !q._id) return null;
 
-      /* الـ API يتوقع selectedAnswer كرقم الخيار (مثل "0", "1", "2") */
-      const idx = q.choices.findIndex(c => c === choice);
-      const selectedAnswer = idx >= 0 ? String(idx) : choice;
+      // بناءً على Postman، نقوم بإرسال قيمة الاختيار المحددة (نصاً أو رقماً) مباشرة كـ string
+      const selectedAnswer = String(choice).trim();
 
       return { questionId: q._id, selectedAnswer };
     })
@@ -333,12 +335,12 @@ export function buildSolvePayload(
 /* ────────────────────────────────────────────────────────────────────────────
    activeExam — تفعيل / إيقاف الاختبار
    PUT /exam/active/:id
-   الـ API يتوقع isActive كنص: "true" أو "false"
 ────────────────────────────────────────────────────────────────────────────── */
 export async function activeExam(examId: string, isActive: boolean): Promise<void> {
   const res = await fetch(`${API_URL}/exam/active/${examId}`, {
     method: "PUT",
     headers: buildHeaders(),
+    // تم الحفاظ على طريقة النص "true" / "false" لتتطابق تماماً مع مدخلات Postman المرفقة بالصورة
     body: JSON.stringify({ isActive: isActive ? "true" : "false" }),
   });
 

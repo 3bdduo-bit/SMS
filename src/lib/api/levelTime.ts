@@ -1,13 +1,13 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/lib/api/levelTime.ts
-   دوال API الخاصة بأوقات المستويات الدراسية
+   دوال API الخاصة بأوقات المستويات الدراسية — النسخة الكاملة والمصححة
 
-   الـ APIs المدعومة:
-     POST   /level-time              — إضافة وقت لمستوى دراسي
-     PUT    /level-time/:id          — تحديث وقت مستوى دراسي
-     GET    /level-time              — جلب جميع أوقات المستويات (للمعلم)
-     GET    /level-time/:level       — جلب وقت مستوى معين (للطالب)
-     DELETE /level-time/:id          — حذف وقت مستوى دراسي
+   الـ APIs المدعومة (طبقاً لصور Postman):
+     POST   /level-time               — إضافة وقت لمستوى دراسي
+     PATCH  /level-time/:id           — تحديث وقت مستوى دراسي (تم تعديلها إلى PATCH)
+     GET    /level-time               — جلب جميع أوقات المستويات (للمعلم/الأدمن)
+     GET    /level-time/:level        — جلب وقت مستوى معين (لالطالب)
+     DELETE /level-time/:id           — حذف وقت مستوى دراسي
 
    كل طلب يرسل JWT token من localStorage في الـ Authorization header
 ───────────────────────────────────────────────────────────────────────────── */
@@ -20,9 +20,10 @@ export interface LevelTime {
   _id?: string;
   id?: string | number;
   level: string;
-  day: string;
-  startTime: string;
-  endTime: string;
+  time: string; // مضاف بناءً على حقول الـ Backend في الصور
+  day?: string;
+  startTime?: string;
+  endTime?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -59,7 +60,6 @@ function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
   const token = getToken();
   return {
     "Content-Type": "application/json",
-    /* الـ API يتوقع: Authorization: <token>  (بدون كلمة Bearer) */
     ...(token ? { Authorization: token } : {}),
     ...extra,
   };
@@ -104,7 +104,8 @@ export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime
   const res = await fetch(`${API_URL}/level-time`, {
     method: "POST",
     headers: buildHeaders(),
-    body: JSON.stringify({ levelTime: payload }),
+    // تصحيح: إرسال الكائن مباشرة بدون تغليفه بـ levelTime بناءً على Postman
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -115,16 +116,18 @@ export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime
 
 /* ────────────────────────────────────────────────────────────────────────────
    updateLevelTime — تحديث وقت مستوى دراسي
-   PUT /level-time/:id
+   PATCH /level-time/:id
 ────────────────────────────────────────────────────────────────────────────── */
 export async function updateLevelTime(
   levelTimeId: string,
   payload: LevelTimePayload
 ): Promise<LevelTime> {
   const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
-    method: "PUT",
+    // تصحيح: تم تغيير الميثود من PUT إلى PATCH طبقاً لصورة Postman
+    method: "PATCH", 
     headers: buildHeaders(),
-    body: JSON.stringify({ levelTime: payload }),
+    // تصحيح: إرسال الكائن مباشرة بدون تغليفه بـ levelTime بناءً على Postman
+    body: JSON.stringify(payload),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -134,7 +137,7 @@ export async function updateLevelTime(
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
-   getAllLevelTimes — جلب جميع أوقات المستويات (للمعلم)
+   getAllLevelTimes — جلب جميع أوقات المستويات (للمعلم / الأدمن)
    GET /level-time
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getAllLevelTimes(): Promise<LevelTime[]> {
@@ -165,7 +168,7 @@ export async function getLevelTimeByLevel(level: string): Promise<LevelTime[]> {
   const times = extractLevelTimes(data);
   
   // إذا كانت الاستجابة كائن واحد وليست مصفوفة
-  if (!Array.isArray(times) && typeof times === 'object') {
+  if (!Array.isArray(times) && typeof times === 'object' && times !== null) {
     return [times as LevelTime];
   }
   
