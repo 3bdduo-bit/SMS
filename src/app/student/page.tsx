@@ -12,7 +12,7 @@
 
 import {
   GraduationCap, ClipboardList, Settings, LogOut, User,
-  ChevronLeft, Bell, Menu, X, LayoutDashboard
+  ChevronLeft, Bell, Menu, X, LayoutDashboard, Clock
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -25,11 +25,18 @@ import ThemeToggle from "@/components/ThemeToggle";
 /* ── بطاقات الوصول السريع للطالب ── */
 const quickAccess = [
   {
+    title: "جدول الحصص",
+    desc: "اعرض جدول حصصك الأسبوعي وأوقات الدروس لمستواك.",
+    icon: Clock,
+    href: "/student/level-time",
+    highlight: true, /* بطاقة مميّزة */
+  },
+  {
     title: "الاختبارات",
     desc: "أدِّ الاختبارات المحددة لك وتعرّف على نتيجتك فوراً.",
     icon: ClipboardList,
     href: "/student/exams",
-    highlight: true, /* بطاقة مميّزة */
+    highlight: false,
   },
   {
     title: "الملف الشخصي",
@@ -166,6 +173,15 @@ export default function StudentPage() {
               <span className="font-semibold text-sm">الرئيسية</span>
             </Link>
             <Link
+              href="/student/level-time"
+              className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5"
+              style={{ color: C.textP }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <Clock className="w-5 h-5" />
+              <span className="font-semibold text-sm">جدول الحصص</span>
+            </Link>
+            <Link
               href="/student/exams"
               className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5"
               style={{ color: C.textP }}
@@ -208,10 +224,10 @@ export default function StudentPage() {
               تابع مستواك الأكاديمي، أجرِ الاختبارات المطلوبة، واطلع على نتائجك أولاً بأول.
             </p>
             {/* زر رئيسي */}
-            <Link href="/student/exams">
+            <Link href="/student/level-time">
               <button className="bg-[#FFF2DB] text-[#0A2947] px-7 py-3 rounded-xl font-extrabold hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 text-sm sm:text-base cursor-pointer flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
-                تصفح الاختبارات
+                <Clock className="w-4 h-4" />
+                عرض جدول الحصص
               </button>
             </Link>
           </div>
