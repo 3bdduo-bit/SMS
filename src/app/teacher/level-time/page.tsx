@@ -171,9 +171,9 @@ export default function LevelTimePage() {
       };
 
       if (editingId) {
-        await updateLevelTime(editingId, _payload);
+        await updateLevelTime(editingId, _payload as any);
       } else {
-        await addLevelTime(_payload);
+        await addLevelTime(_payload as any);
       }
       await loadLevelTimes();
       resetForm();

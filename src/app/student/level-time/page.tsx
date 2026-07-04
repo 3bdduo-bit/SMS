@@ -92,9 +92,9 @@ export default function StudentLevelTimePage() {
 
   /* ── ترتيب الأيام حسب الترتيب الأسبوعي ── */
   const dayOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-  const sortedTimes = [...levelTimes].sort((a, b) => {
-    return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
-  });
+const sortedTimes = [...levelTimes].sort((a, b) => {
+  return dayOrder.indexOf(a.day ?? "") - dayOrder.indexOf(b.day ?? "");
+});
 
   return (
     <div
@@ -272,7 +272,7 @@ export default function StudentLevelTimePage() {
                         </div>
                         <div>
                           <p className="font-extrabold text-lg mb-1" style={{ color: C.textP }}>
-                            {getDayLabel(time.day)}
+                          {getDayLabel(time.day ?? "")}
                           </p>
                           <div className="flex items-center gap-2">
                             <span

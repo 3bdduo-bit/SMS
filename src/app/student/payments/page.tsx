@@ -284,7 +284,7 @@ export default function StudentPaymentsPage() {
                   <Calendar className="w-5 h-5" style={{ color: C.textM }} />
                   <div>
                     <p className="text-xs font-semibold" style={{ color: C.textM }}>تاريخ الانتهاء</p>
-                    <p className="text-sm font-bold" style={{ color: C.textP }}>{formatDate(paidUntil)}</p>
+                    <p className="text-sm font-bold" style={{ color: C.textP }}>{formatDate(paidUntil ??"")}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 bg-black/5 rounded-xl p-3" style={{ backgroundColor: isDark ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.03)" }}>

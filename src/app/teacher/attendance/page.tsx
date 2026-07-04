@@ -142,7 +142,7 @@ export default function TeacherAttendancePage() {
         const existingRecord = attendance.find(r => String(r.studentId) === id);
         
         if (existingRecord) {
-          await updateAttendance(existingRecord.id || existingRecord._id || id, status);
+          await updateAttendance(existingRecord.id || id, status as "present" | "absent" | "late" | "excused");
         } else {
           await recordAttendance(id, status as any, selectedDate);
         }
