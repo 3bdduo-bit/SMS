@@ -14,7 +14,7 @@
 import {
   GraduationCap, Users, BookOpen, Calendar,
   ClipboardList, MessageSquare, Settings, LogOut,
-  ChevronLeft, Bell, Menu, X, LayoutDashboard, CreditCard, Clock
+  ChevronLeft, Bell, Menu, X, LayoutDashboard, CreditCard, Clock, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -34,6 +34,22 @@ const quickAccess = [
     href: "/teacher/students",
     highlight: true, /* بطاقة مميّزة */
     countKey: "students" as const,
+  },
+  {
+    title: "تسجيل الحضور",
+    desc: "سجل حضور الطلاب لكل يوم وتابع سجل الحضور.",
+    icon: CheckCircle2,
+    href: "/teacher/attendance",
+    highlight: false,
+    countKey: null,
+  },
+  {
+    title: "إدارة الكتب",
+    desc: "أضف كتباً ومصغرات لكل مستوى دراسي.",
+    icon: BookOpen,
+    href: "/teacher/books",
+    highlight: false,
+    countKey: null,
   },
   {
     title: "أوقات المستويات",

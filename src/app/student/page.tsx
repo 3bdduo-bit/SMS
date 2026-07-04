@@ -12,7 +12,7 @@
 
 import {
   GraduationCap, ClipboardList, Settings, LogOut, User,
-  ChevronLeft, Bell, Menu, X, LayoutDashboard, Clock
+  ChevronLeft, Bell, Menu, X, LayoutDashboard, Clock, CheckCircle2, BookOpen, CreditCard
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +30,27 @@ const quickAccess = [
     icon: Clock,
     href: "/student/level-time",
     highlight: true, /* بطاقة مميّزة */
+  },
+  {
+    title: "سجل الحضور",
+    desc: "تابع سجل حضورك وإحصائياتك الدراسية.",
+    icon: CheckCircle2,
+    href: "/student/attendance",
+    highlight: false,
+  },
+  {
+    title: "المكتبة",
+    desc: "تصفح الكتب والمصغرات الخاصة بمستواك.",
+    icon: BookOpen,
+    href: "/student/books",
+    highlight: false,
+  },
+  {
+    title: "المدفوعات",
+    desc: "تحقق من حالة اشتراكك وقم بتجديده.",
+    icon: CreditCard,
+    href: "/student/payments",
+    highlight: false,
   },
   {
     title: "الاختبارات",
