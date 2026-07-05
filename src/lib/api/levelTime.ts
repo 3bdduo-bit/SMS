@@ -1,13 +1,16 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/lib/api/levelTime.ts
-   دوال API الخاصة بأوقات المستويات الدراسية — النسخة الكاملة والمصححة
+   دوال API الخاصة بأوقات المستويات الدراسية — النسخة المصححة
 
    الـ APIs المدعومة (طبقاً لصور Postman):
      POST   /level-time               — إضافة وقت لمستوى دراسي
-     PATCH  /level-time/:id           — تحديث وقت مستوى دراسي (تم تعديلها إلى PATCH)
+     PATCH  /level-time/:id           — تحديث وقت مستوى دراسي
      GET    /level-time               — جلب جميع أوقات المستويات (للمعلم/الأدمن)
-     GET    /level-time/:level        — جلب وقت مستوى معين (لالطالب)
+     GET    /level-time/:level        — جلب وقت مستوى معين (للطالب)
      DELETE /level-time/:id           — حذف وقت مستوى دراسي
+
+   الـ Backend يتوقع: { level: string, time: string }
+   حيث time = ISO datetime مثل "2026-07-30T10:00:00"
 
    كل طلب يرسل JWT token من localStorage في الـ Authorization header
 ───────────────────────────────────────────────────────────────────────────── */
@@ -20,10 +23,7 @@ export interface LevelTime {
   _id?: string;
   id?: string | number;
   level: string;
-  time: string; // مضاف بناءً على حقول الـ Backend في الصور
-  day?: string;
-  startTime?: string;
-  endTime?: string;
+  time: string; // ISO datetime: "2026-07-30T10:00:00"
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -34,17 +34,6 @@ export interface LevelTimePayload {
   level: string;
   time: string; // ISO datetime format: "2026-07-30T10:00:00"
 }
-
-/* ── أيام الأسبوع المتاحة ── */
-export const DAY_OPTIONS = [
-  { value: "sunday", label: "الأحد" },
-  { value: "monday", label: "الاثنين" },
-  { value: "tuesday", label: "الثلاثاء" },
-  { value: "wednesday", label: "الأربعاء" },
-  { value: "thursday", label: "الخميس" },
-  { value: "friday", label: "الجمعة" },
-  { value: "saturday", label: "السبت" },
-] as const;
 
 /* ── إعادة تصدير خيارات المستويات من students.ts ── */
 export const LEVEL_OPTIONS = STUDENT_LEVEL_OPTIONS;
@@ -60,7 +49,7 @@ function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
   const token = getToken();
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: token } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...extra,
   };
 }
@@ -99,12 +88,12 @@ function extractLevelTimes(data: Record<string, unknown>): LevelTime[] {
 /* ────────────────────────────────────────────────────────────────────────────
    addLevelTime — إضافة وقت لمستوى دراسي
    POST /level-time
+   Body: { level: "three", time: "2026-07-30T10:00:00" }
 ────────────────────────────────────────────────────────────────────────────── */
 export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime> {
   const res = await fetch(`${API_URL}/level-time`, {
     method: "POST",
     headers: buildHeaders(),
-    // تصحيح: إرسال الكائن مباشرة بدون تغليفه بـ levelTime بناءً على Postman
     body: JSON.stringify(payload),
   });
 
@@ -117,16 +106,15 @@ export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime
 /* ────────────────────────────────────────────────────────────────────────────
    updateLevelTime — تحديث وقت مستوى دراسي
    PATCH /level-time/:id
+   Body: { level: "three", time: "2026-07-30T10:00:00" }
 ────────────────────────────────────────────────────────────────────────────── */
 export async function updateLevelTime(
   levelTimeId: string,
   payload: LevelTimePayload
 ): Promise<LevelTime> {
   const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
-    // تصحيح: تم تغيير الميثود من PUT إلى PATCH طبقاً لصورة Postman
     method: "PATCH", 
     headers: buildHeaders(),
-    // تصحيح: إرسال الكائن مباشرة بدون تغليفه بـ levelTime بناءً على Postman
     body: JSON.stringify(payload),
   });
 
@@ -191,14 +179,104 @@ export async function deleteLevelTime(levelTimeId: string): Promise<void> {
   }
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   دوال مساعدة للعرض — تحليل ISO datetime لاستخراج المعلومات
+════════════════════════════════════════════════════════════════════════════ */
+
+/* ── أيام الأسبوع بالعربي ── */
+const ARABIC_DAYS = [
+  "الأحد", "الاثنين", "الثلاثاء", "الأربعاء",
+  "الخميس", "الجمعة", "السبت"
+] as const;
+
+/* ── أسماء الأشهر بالعربي ── */
+const ARABIC_MONTHS = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+] as const;
+
+/* ── استخراج اسم اليوم بالعربي من ISO datetime ── */
+export function getDayFromTime(isoTime: string): string {
+  try {
+    const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return "—";
+    return ARABIC_DAYS[date.getDay()];
+  } catch {
+    return "—";
+  }
+}
+
+/* ── استخراج التاريخ المنسق بالعربي من ISO datetime ── */
+export function getFormattedDate(isoTime: string): string {
+  try {
+    const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return "—";
+    const day = date.getDate();
+    const month = ARABIC_MONTHS[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch {
+    return "—";
+  }
+}
+
+/* ── استخراج الوقت المنسق (ساعة:دقيقة) من ISO datetime ── */
+export function getFormattedTime(isoTime: string): string {
+  try {
+    const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return "—";
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+  } catch {
+    return "—";
+  }
+}
+
+/* ── استخراج الوقت بصيغة 12 ساعة مع ص/م ── */
+export function getFormattedTime12(isoTime: string): string {
+  try {
+    const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return "—";
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const period = hours >= 12 ? "م" : "ص";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${period}`;
+  } catch {
+    return "—";
+  }
+}
+
+/* ── تحويل datetime-local value إلى ISO string للـ API ── */
+export function datetimeLocalToISO(datetimeLocal: string): string {
+  // datetime-local format: "2026-07-30T10:00"
+  // API expects: "2026-07-30T10:00:00"
+  if (!datetimeLocal) return "";
+  // إضافة الثواني إذا لم تكن موجودة
+  return datetimeLocal.length === 16 ? `${datetimeLocal}:00` : datetimeLocal;
+}
+
+/* ── تحويل ISO string إلى datetime-local value للنموذج ── */
+export function isoToDatetimeLocal(isoTime: string): string {
+  if (!isoTime) return "";
+  try {
+    const date = new Date(isoTime);
+    if (isNaN(date.getTime())) return "";
+    // نحتاج التنسيق: "YYYY-MM-DDTHH:MM"
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+}
+
 /* ── دالة مساعدة للحصول على اسم المستوى بالعربي ── */
 export function getLevelLabel(levelValue: string): string {
   const level = LEVEL_OPTIONS.find((l: { value: string; label: string }) => l.value === levelValue);
   return level?.label || levelValue;
-}
-
-/* ── دالة مساعدة للحصول على اسم اليوم بالعربي ── */
-export function getDayLabel(dayValue: string): string {
-  const day = DAY_OPTIONS.find((d: { value: string; label: string }) => d.value === dayValue);
-  return day?.label || dayValue;
 }

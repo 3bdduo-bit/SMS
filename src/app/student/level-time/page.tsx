@@ -6,7 +6,7 @@
 
    الميزات:
    - عرض أوقات الحصص الخاصة بمستوى الطالب فقط
-   - عرض الجدول الأسبوعي بشكل منظم
+   - عرض الجدول الأسبوعي بشكل منظم باستخدام ISO datetime
    - دعم الوضع الليلي + RTL + اللغة العربية
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -24,8 +24,10 @@ import { getProfile, UserProfile } from "@/lib/api/user";
 import {
   getLevelTimeByLevel,
   LevelTime,
-  getDayLabel,
-  getLevelLabel
+  getLevelLabel,
+  getDayFromTime,
+  getFormattedDate,
+  getFormattedTime12
 } from "@/lib/api/levelTime";
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -90,11 +92,10 @@ export default function StudentLevelTimePage() {
     return name.split(" ")[0];
   };
 
-  /* ── ترتيب الأيام حسب الترتيب الأسبوعي ── */
-  const dayOrder = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
-const sortedTimes = [...levelTimes].sort((a, b) => {
-  return dayOrder.indexOf(a.day ?? "") - dayOrder.indexOf(b.day ?? "");
-});
+  /* ── ترتيب الأوقات حسب التاريخ ── */
+  const sortedTimes = [...levelTimes].sort((a, b) => {
+    return new Date(a.time).getTime() - new Date(b.time).getTime();
+  });
 
   return (
     <div
@@ -249,7 +250,7 @@ const sortedTimes = [...levelTimes].sort((a, b) => {
                 >
                   <Calendar className="w-5 h-5 text-[#A8C8E8]" />
                   <h3 className="text-lg font-extrabold text-[#FFFAF3]">
-                    جدول الحصص الأسبوعي
+                    جدول الحصص القادمة
                   </h3>
                   <span className="bg-[#A8C8E8]/20 text-[#A8C8E8] text-xs font-extrabold px-3 py-1 rounded-full">
                     {sortedTimes.length} حصة
@@ -258,7 +259,9 @@ const sortedTimes = [...levelTimes].sort((a, b) => {
 
                 {/* قائمة الحصص */}
                 <div className="divide-y" style={{ borderColor: C.border }}>
-                  {sortedTimes.map((time, index) => (
+                  {sortedTimes.map((time, index) => {
+                    const isFuture = new Date(time.time).getTime() > Date.now();
+                    return (
                     <div
                       key={time._id || time.id || index}
                       className="px-6 py-5 flex items-center justify-between hover:bg-black/5 transition-colors"
@@ -272,7 +275,7 @@ const sortedTimes = [...levelTimes].sort((a, b) => {
                         </div>
                         <div>
                           <p className="font-extrabold text-lg mb-1" style={{ color: C.textP }}>
-                          {getDayLabel(time.day ?? "")}
+                            {getDayFromTime(time.time)} — {getFormattedDate(time.time)}
                           </p>
                           <div className="flex items-center gap-2">
                             <span
@@ -282,29 +285,24 @@ const sortedTimes = [...levelTimes].sort((a, b) => {
                                 color: "#0A2947" 
                               }}
                             >
-                              {time.startTime}
-                            </span>
-                            <span style={{ color: C.textM }}>→</span>
-                            <span
-                              className="text-sm font-semibold px-3 py-1 rounded-full"
-                              style={{ 
-                                backgroundColor: "rgba(168,200,232,0.2)", 
-                                color: "#0A2947" 
-                              }}
-                            >
-                              {time.endTime}
+                              {getFormattedTime12(time.time)}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* مؤشر الحصة النشطة */}
+                      {/* مؤشر الحصة (قادمة أو سابقة) */}
                       <div
-                        className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"
-                        title="حصة نشطة"
+                        className={`w-3 h-3 rounded-full shadow-lg ${
+                          isFuture 
+                            ? "bg-green-500 shadow-green-500/50" 
+                            : "bg-gray-400 shadow-gray-400/50"
+                        }`}
+                        title={isFuture ? "حصة قادمة" : "حصة منتهية"}
                       />
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
             )}

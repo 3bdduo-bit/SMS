@@ -6,7 +6,7 @@
 
    الميزات:
    - عرض جميع أوقات المستويات الدراسية
-   - إضافة وقت جديد لمستوى دراسي
+   - إضافة وقت جديد لمستوى دراسي (level + time ISO datetime)
    - تعديل وقت مستوى دراسي موجود
    - حذف وقت مستوى دراسي
    - دعم الوضع الليلي + RTL + اللغة العربية
@@ -28,21 +28,24 @@ import {
   updateLevelTime,
   deleteLevelTime,
   LevelTime,
+  LevelTimePayload,
   LEVEL_OPTIONS,
-  DAY_OPTIONS,
   getLevelLabel,
-  getDayLabel
+  getDayFromTime,
+  getFormattedDate,
+  getFormattedTime12,
+  datetimeLocalToISO,
+  isoToDatetimeLocal
 } from "@/lib/api/levelTime";
 
 /* ════════════════════════════════════════════════════════════════════════════
    أنواع البيانات المحلية
 ════════════════════════════════════════════════════════════════════════════ */
 
+/* ── نموذج الإضافة/التعديل — يتوافق مع Backend: { level, time } ── */
 interface LevelTimeFormData {
   level: string;
-  day: string;
-  startTime: string;
-  endTime: string;
+  time: string; // datetime-local value: "2026-07-30T10:00"
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -62,9 +65,7 @@ export default function LevelTimePage() {
   /* ── نموذج الإضافة/التعديل ── */
   const [formData, setFormData] = useState<LevelTimeFormData>({
     level: "",
-    day: "",
-    startTime: "",
-    endTime: "",
+    time: "",
   });
 
   /* ── المستوى المحدد للعرض التفصيلي ── */
@@ -102,9 +103,7 @@ export default function LevelTimePage() {
   const resetForm = () => {
     setFormData({
       level: selectedLevel || "",
-      day: "",
-      startTime: "",
-      endTime: "",
+      time: "",
     });
     setShowAddForm(false);
     setEditingId(null);
@@ -114,9 +113,8 @@ export default function LevelTimePage() {
   const handleEdit = (levelTime: LevelTime) => {
     setFormData({
       level: selectedLevel || levelTime.level,
-      day: levelTime.day || "",
-      startTime: levelTime.startTime || "",
-      endTime: levelTime.endTime || "",
+      /* تحويل الـ ISO time إلى صيغة datetime-local للنموذج */
+      time: isoToDatetimeLocal(levelTime.time || ""),
     });
     setEditingId(levelTime._id || levelTime.id?.toString() || "");
     setShowAddForm(true);
@@ -129,9 +127,7 @@ export default function LevelTimePage() {
     setEditingId(null);
     setFormData({
       level,
-      day: "",
-      startTime: "",
-      endTime: "",
+      time: "",
     });
   };
 
@@ -139,9 +135,7 @@ export default function LevelTimePage() {
   const handleAddTimeForLevel = () => {
     setFormData({
       level: selectedLevel || "",
-      day: "",
-      startTime: "",
-      endTime: "",
+      time: "",
     });
     setEditingId(null);
     setShowAddForm(true);
@@ -154,26 +148,24 @@ export default function LevelTimePage() {
     setEditingId(null);
     setFormData({
       level: "",
-      day: "",
-      startTime: "",
-      endTime: "",
+      time: "",
     });
   };
 
-  /* ── حفظ الإضافة/التعديل ── */
+  /* ── حفظ الإضافة/التعديل — يرسل { level, time } للـ Backend ── */
   const handleSave = async () => {
     try {
-      const _payload = {
+      /* بناء الـ payload بالتنسيق الصحيح للـ Backend */
+      const _payload: LevelTimePayload = {
         level: formData.level,
-        day: formData.day,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        /* تحويل datetime-local إلى ISO string: "2026-07-30T10:00:00" */
+        time: datetimeLocalToISO(formData.time),
       };
 
       if (editingId) {
-        await updateLevelTime(editingId, _payload as any);
+        await updateLevelTime(editingId, _payload);
       } else {
-        await addLevelTime(_payload as any);
+        await addLevelTime(_payload);
       }
       await loadLevelTimes();
       resetForm();
@@ -294,9 +286,7 @@ export default function LevelTimePage() {
               onClick={() => {
                 setFormData({
                   level: "",
-                  day: "",
-                  startTime: "",
-                  endTime: "",
+                  time: "",
                 });
                 setEditingId(null);
                 setShowAddForm(true);
@@ -353,49 +343,15 @@ export default function LevelTimePage() {
                 </select>
               </div>
 
-              {/* اختيار اليوم */}
+              {/* اختيار التاريخ والوقت — datetime-local يتوافق مع Backend */}
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                  اليوم
-                </label>
-                <select
-                  value={formData.day}
-                  onChange={(e) => setFormData({ ...formData, day: e.target.value })}
-                  className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
-                  style={{ backgroundColor: C.page, borderColor: C.border, color: C.textP }}
-                >
-                  <option value="">اختر اليوم</option>
-                  {DAY_OPTIONS.map((day) => (
-                    <option key={day.value} value={day.value}>
-                      {day.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* وقت البداية */}
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                  وقت البداية
+                  التاريخ والوقت
                 </label>
                 <input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
-                  style={{ backgroundColor: C.page, borderColor: C.border, color: C.textP }}
-                />
-              </div>
-
-              {/* وقت النهاية */}
-              <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                  وقت النهاية
-                </label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  type="datetime-local"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                   className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
                   style={{ backgroundColor: C.page, borderColor: C.border, color: C.textP }}
                 />
@@ -406,7 +362,7 @@ export default function LevelTimePage() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleSave}
-                disabled={!formData.level || !formData.day || !formData.startTime || !formData.endTime}
+                disabled={!formData.level || !formData.time}
                 className="flex-1 bg-[#0A2947] text-[#A8C8E8] px-6 py-3 rounded-xl font-extrabold hover:bg-[#0A2947]/80 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Save className="w-4 h-4" />
@@ -455,9 +411,7 @@ export default function LevelTimePage() {
                       onClick={() => {
                         setFormData({
                           level: "",
-                          day: "",
-                          startTime: "",
-                          endTime: "",
+                          time: "",
                         });
                         setEditingId(null);
                         setShowAddForm(true);
@@ -515,9 +469,7 @@ export default function LevelTimePage() {
                           setSelectedLevel(null);
                           setFormData({
                             level: "",
-                            day: "",
-                            startTime: "",
-                            endTime: "",
+                            time: "",
                           });
                           setEditingId(null);
                           setShowAddForm(true);
@@ -583,7 +535,7 @@ export default function LevelTimePage() {
                     </button>
                   </div>
 
-                  {/* قائمة الأيام مع الأوقات */}
+                  {/* قائمة الأوقات */}
                   <div className="p-6">
                     {/* نموذج إضافة حصة للمستوى المحدد */}
                     {showAddForm && selectedLevel && (
@@ -604,61 +556,25 @@ export default function LevelTimePage() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          {/* اختيار اليوم */}
-                          <div>
-                            <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                              اليوم
-                            </label>
-                            <select
-                              value={formData.day}
-                              onChange={(e) => setFormData({ ...formData, day: e.target.value })}
-                              className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
-                              style={{ backgroundColor: C.card, borderColor: C.border, color: C.textP }}
-                            >
-                              <option value="">اختر اليوم</option>
-                              {DAY_OPTIONS.map((day) => (
-                                <option key={day.value} value={day.value}>
-                                  {day.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          {/* وقت البداية */}
-                          <div>
-                            <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                              وقت البداية
-                            </label>
-                            <input
-                              type="time"
-                              value={formData.startTime}
-                              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                              className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
-                              style={{ backgroundColor: C.card, borderColor: C.border, color: C.textP }}
-                            />
-                          </div>
-
-                          {/* وقت النهاية */}
-                          <div>
-                            <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
-                              وقت النهاية
-                            </label>
-                            <input
-                              type="time"
-                              value={formData.endTime}
-                              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                              className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
-                              style={{ backgroundColor: C.card, borderColor: C.border, color: C.textP }}
-                            />
-                          </div>
+                        {/* حقل datetime-local — يتوافق مع Backend */}
+                        <div>
+                          <label className="block text-sm font-semibold mb-2" style={{ color: C.textP }}>
+                            التاريخ والوقت
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={formData.time}
+                            onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                            className="w-full p-3 rounded-xl border-2 focus:outline-none focus:border-[#0A2947] transition-colors"
+                            style={{ backgroundColor: C.card, borderColor: C.border, color: C.textP }}
+                          />
                         </div>
 
                         {/* أزرار الحفظ والإلغاء */}
                         <div className="flex gap-3 mt-4">
                           <button
                             onClick={handleSave}
-                            disabled={!formData.level || !formData.day || !formData.startTime || !formData.endTime}
+                            disabled={!formData.level || !formData.time}
                             className="flex-1 bg-[#0A2947] text-[#A8C8E8] px-4 py-2 rounded-xl font-extrabold hover:bg-[#0A2947]/80 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                           >
                             <Save className="w-4 h-4" />
@@ -679,107 +595,74 @@ export default function LevelTimePage() {
                       </div>
                     )}
 
-                    {DAY_OPTIONS.map((dayOption) => {
-                      const dayTimes = (groupedByLevel[selectedLevel] || []).filter(
-                        (t) => t.day === dayOption.value
-                      );
-
-                      if (dayTimes.length === 0) return null;
-
-                      return (
-                        <div
-                          key={dayOption.value}
-                          className="mb-6 last:mb-0"
-                        >
-                          {/* عنوان اليوم */}
+                    {/* عرض الأوقات المسجلة للمستوى المحدد */}
+                    {(groupedByLevel[selectedLevel] || []).length > 0 ? (
+                      <div className="space-y-3">
+                        {/* ترتيب الأوقات حسب التاريخ */}
+                        {[...(groupedByLevel[selectedLevel] || [])].sort((a, b) => {
+                          return new Date(a.time).getTime() - new Date(b.time).getTime();
+                        }).map((time) => (
                           <div
-                            className="flex items-center gap-3 mb-3 pb-2 border-b-2"
-                            style={{ borderColor: C.border }}
+                            key={time._id || time.id}
+                            className={`rounded-xl p-4 flex items-center justify-between hover:bg-black/5 transition-colors ${tr}`}
+                            style={{ backgroundColor: C.page, border: `1px solid ${C.border}` }}
                           >
-                            <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center"
-                              style={{ backgroundColor: "rgba(168,200,232,0.2)" }}
-                            >
-                              <Clock className="w-5 h-5" style={{ color: C.textP }} />
-                            </div>
-                            <h4 className="font-extrabold text-lg" style={{ color: C.textP }}>
-                              {dayOption.label}
-                            </h4>
-                            <span
-                              className="text-xs font-semibold px-2 py-1 rounded-full"
-                              style={{ backgroundColor: "rgba(168,200,232,0.2)", color: "#0A2947" }}
-                            >
-                              {dayTimes.length} حصة
-                            </span>
-                          </div>
-
-                          {/* قائمة أوقات هذا اليوم */}
-                          <div className="space-y-3 mr-12">
-                            {dayTimes.map((time) => (
+                            {/* معلومات الوقت — محلّلة من ISO datetime */}
+                            <div className="flex items-center gap-4">
                               <div
-                                key={time._id || time.id}
-                                className={`rounded-xl p-4 flex items-center justify-between hover:bg-black/5 transition-colors ${tr}`}
-                                style={{ backgroundColor: C.page, border: `1px solid ${C.border}` }}
+                                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: "rgba(168,200,232,0.2)" }}
                               >
-                                <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-3">
-                                    <span
-                                      className="font-extrabold px-3 py-1 rounded-lg"
-                                      style={{ 
-                                        backgroundColor: "rgba(168,200,232,0.3)", 
-                                        color: "#0A2947" 
-                                      }}
-                                    >
-                                      {time.startTime}
-                                    </span>
-                                    <span style={{ color: C.textM }}>→</span>
-                                    <span
-                                      className="font-extrabold px-3 py-1 rounded-lg"
-                                      style={{ 
-                                        backgroundColor: "rgba(168,200,232,0.3)", 
-                                        color: "#0A2947" 
-                                      }}
-                                    >
-                                      {time.endTime}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => handleEdit(time)}
-                                    className="p-2 rounded-lg hover:bg-[#0A2947]/10 transition-colors"
-                                    style={{ color: C.textM }}
-                                    title="تعديل"
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(time._id || time.id?.toString() || "")}
-                                    className="p-2 rounded-lg hover:bg-red-50 transition-colors text-red-500"
-                                    title="حذف"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
+                                <Clock className="w-5 h-5" style={{ color: C.textP }} />
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
+                              <div>
+                                {/* اليوم والتاريخ */}
+                                <p className="font-extrabold text-sm mb-1" style={{ color: C.textP }}>
+                                  {getDayFromTime(time.time)} — {getFormattedDate(time.time)}
+                                </p>
+                                {/* الوقت */}
+                                <span
+                                  className="font-extrabold px-3 py-1 rounded-lg text-sm"
+                                  style={{ 
+                                    backgroundColor: "rgba(168,200,232,0.3)", 
+                                    color: "#0A2947" 
+                                  }}
+                                >
+                                  {getFormattedTime12(time.time)}
+                                </span>
+                              </div>
+                            </div>
 
-                    {DAY_OPTIONS.every(
-                      (day) =>
-                        !(groupedByLevel[selectedLevel] || []).some((t) => t.day === day.value)
-                    ) && (
+                            {/* أزرار التعديل والحذف */}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleEdit(time)}
+                                className="p-2 rounded-lg hover:bg-[#0A2947]/10 transition-colors"
+                                style={{ color: C.textM }}
+                                title="تعديل"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(time._id || time.id?.toString() || "")}
+                                className="p-2 rounded-lg hover:bg-red-50 transition-colors text-red-500"
+                                title="حذف"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      /* حالة عدم وجود حصص */
                       <div className="text-center py-8">
                         <Clock className="w-12 h-12 mx-auto mb-3" style={{ color: C.textM }} />
                         <p className="font-semibold mb-2" style={{ color: C.textP }}>
                           لا توجد حصص مسجلة
                         </p>
                         <p style={{ color: C.textS }}>
-                          اضغط على "إضافة حصة" لبدء إضافة أوقات الحصص
+                          اضغط على &quot;إضافة حصة&quot; لبدء إضافة أوقات الحصص
                         </p>
                       </div>
                     )}
