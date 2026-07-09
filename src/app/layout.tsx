@@ -8,6 +8,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import BackgroundVideo from "@/components/BackgroundVideo";
+import AppLoaderWrapper from "@/components/AppLoaderWrapper";
 
 /* عنوان وصف الصفحة */
 export const metadata: Metadata = {
@@ -35,9 +36,12 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         {/* ThemeProvider يجعل كل المكوّنات تُعيد الرسم عند تغيير الثيم */}
         <ThemeProvider>
-          {/* فيديو الخلفية — يعمل على جميع صفحات الموقع */}
-          <BackgroundVideo />
-          {children}
+          {/* AppLoaderWrapper: يُظهر شاشة التحميل عند أول زيارة في الجلسة */}
+          <AppLoaderWrapper>
+            {/* فيديو الخلفية — يعمل على جميع صفحات الموقع */}
+            <BackgroundVideo />
+            {children}
+          </AppLoaderWrapper>
         </ThemeProvider>
       </body>
     </html>

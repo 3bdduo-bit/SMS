@@ -1,8 +1,8 @@
 /* ─────────────────────────────────────────────────────────────────────────────
    src/lib/api/levelTime.ts
-   دوال API الخاصة بأوقات المستويات الدراسية — النسخة المصححة
+   دوال API الخاصة بأوقات المستويات الدراسية — أوقات أسبوعية ثابتة
 
-   الـ APIs المدعومة (طبقاً لصور Postman):
+   الـ APIs المدعومة:
      POST   /level-time               — إضافة وقت لمستوى دراسي
      PATCH  /level-time/:id           — تحديث وقت مستوى دراسي
      GET    /level-time               — جلب جميع أوقات المستويات (للمعلم/الأدمن)
@@ -10,20 +10,35 @@
      DELETE /level-time/:id           — حذف وقت مستوى دراسي
 
    الـ Backend يتوقع: { level: string, time: string }
-   حيث time = ISO datetime مثل "2026-07-30T10:00:00"
-
-   كل طلب يرسل JWT token من localStorage في الـ Authorization header
+   حيث time = "HH:MM" أو "DayName HH:MM" حسب ما يقبله الـ Backend
+   (الوقت الأسبوعي الثابت — بدون تاريخ)
 ───────────────────────────────────────────────────────────────────────────── */
 
 import { API_URL } from "./config";
 import { LEVEL_OPTIONS as STUDENT_LEVEL_OPTIONS } from "./students";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   أيام الأسبوع — ثابتة لا تتغير
+═══════════════════════════════════════════════════════════════════════════ */
+export const DAY_OPTIONS = [
+  { value: "sunday",    label: "الأحد" },
+  { value: "monday",    label: "الاثنين" },
+  { value: "tuesday",   label: "الثلاثاء" },
+  { value: "wednesday", label: "الأربعاء" },
+  { value: "thursday",  label: "الخميس" },
+  { value: "friday",    label: "الجمعة" },
+  { value: "saturday",  label: "السبت" },
+] as const;
+
+export type DayValue = (typeof DAY_OPTIONS)[number]["value"];
 
 /* ── نوع بيانات وقت المستوى المُرجَعة من الـ API ── */
 export interface LevelTime {
   _id?: string;
   id?: string | number;
   level: string;
-  time: string; // ISO datetime: "2026-07-30T10:00:00"
+  day: string;   // يوم الأسبوع: "sunday" | "monday" | ...
+  time: string;  // الوقت فقط: "HH:MM"
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;
@@ -32,12 +47,18 @@ export interface LevelTime {
 /* ── payload إنشاء/تحديث وقت المستوى ── */
 export interface LevelTimePayload {
   level: string;
-  time: string; // ISO datetime format: "2026-07-30T10:00:00"
+  day: string;  // يوم الأسبوع
+  time: string; // الوقت: "HH:MM"
 }
 
-/* ── نظام تخزين وهمي لأوقات المستويات ── */
-const LEVEL_TIMES_LOCAL_DB = "sms_level_times_db";
-const LEVEL_TIMES_SEEDED = "sms_level_times_seeded";
+/* ── إعادة تصدير خيارات المستويات من students.ts ── */
+export const LEVEL_OPTIONS = STUDENT_LEVEL_OPTIONS;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   قاعدة بيانات محلية (fallback عند فشل الـ API)
+════════════════════════════════════════════════════════════════════════════ */
+const LEVEL_TIMES_LOCAL_DB = "sms_level_times_db_v2"; // v2 لتجنب تعارض البيانات القديمة
+const LEVEL_TIMES_SEEDED   = "sms_level_times_seeded_v2";
 
 function getLocalLevelTimes(): LevelTime[] {
   if (typeof window === "undefined") return [];
@@ -54,45 +75,52 @@ function saveLocalLevelTimes(times: LevelTime[]) {
   } catch {}
 }
 
+/* ── بيانات أولية تجريبية (أوقات أسبوعية ثابتة) ── */
 const SEED_LEVEL_TIMES: LevelTime[] = [
   {
     _id: "seed-lt1",
     level: "seven",
-    time: "2026-07-30T08:00:00",
+    day:  "sunday",
+    time: "08:00",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
   {
     _id: "seed-lt2",
-    level: "ten",
-    time: "2026-07-31T10:30:00",
+    level: "seven",
+    day:  "tuesday",
+    time: "10:30",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  }
+  },
+  {
+    _id: "seed-lt3",
+    level: "ten",
+    day:  "monday",
+    time: "09:00",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 function seedIfNeeded() {
   if (typeof window === "undefined") return;
-  const alreadySeeded = localStorage.getItem(LEVEL_TIMES_SEEDED);
-  if (alreadySeeded) return;
-
-  const existing = getLocalLevelTimes();
-  if (existing.length === 0) {
+  if (localStorage.getItem(LEVEL_TIMES_SEEDED)) return;
+  if (getLocalLevelTimes().length === 0) {
     saveLocalLevelTimes(SEED_LEVEL_TIMES);
   }
   localStorage.setItem(LEVEL_TIMES_SEEDED, "true");
 }
 
-/* ── إعادة تصدير خيارات المستويات من students.ts ── */
-export const LEVEL_OPTIONS = STUDENT_LEVEL_OPTIONS;
+/* ════════════════════════════════════════════════════════════════════════════
+   دوال مساعدة للـ HTTP
+════════════════════════════════════════════════════════════════════════════ */
 
-/* ── استخراج الـ token من localStorage بأمان ── */
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
 }
 
-/* ── بناء headers موحّدة مع Authorization ── */
 function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
   const token = getToken();
   return {
@@ -102,14 +130,9 @@ function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
   };
 }
 
-/* ── استخراج رسالة الخطأ من استجابة الـ API ── */
 function getErrorMessage(data: Record<string, unknown>, fallback: string): string {
   const details = data?.errorDetails as { message?: string }[] | undefined;
-  return (
-    (data?.message as string) ||
-    details?.[0]?.message ||
-    fallback
-  );
+  return (data?.message as string) || details?.[0]?.message || fallback;
 }
 
 /* ── استخراج وقت المستوى من استجابة الـ API ── */
@@ -128,16 +151,14 @@ function extractLevelTimes(data: Record<string, unknown>): LevelTime[] {
     ?? (data?.data as LevelTime[] | undefined)
     ?? (data?.levelTimes as LevelTime[] | undefined)
     ?? (data as unknown as LevelTime[] | undefined);
-  
-  const list = Array.isArray(times) ? times : [];
-  return list as LevelTime[];
+  return Array.isArray(times) ? (times as LevelTime[]) : [];
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   addLevelTime — إضافة وقت لمستوى دراسي
-   POST /level-time
-   Body: { level: "three", time: "2026-07-30T10:00:00" }
-────────────────────────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════════
+   دوال API العامة
+════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── إضافة وقت لمستوى دراسي ─── */
 export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime> {
   try {
     const res = await fetch(`${API_URL}/level-time`, {
@@ -145,12 +166,11 @@ export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime
       headers: buildHeaders(),
       body: JSON.stringify(payload),
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(getErrorMessage(data, "فشل في إضافة وقت المستوى."));
-
     return extractLevelTime(data);
   } catch {
+    /* fallback محلي */
     const times = getLocalLevelTimes();
     const newTime: LevelTime = {
       ...payload,
@@ -164,25 +184,19 @@ export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   updateLevelTime — تحديث وقت مستوى دراسي
-   PATCH /level-time/:id
-   Body: { level: "three", time: "2026-07-30T10:00:00" }
-────────────────────────────────────────────────────────────────────────────── */
+/* ─── تحديث وقت مستوى دراسي ─── */
 export async function updateLevelTime(
   levelTimeId: string,
   payload: LevelTimePayload
 ): Promise<LevelTime> {
   try {
     const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
-      method: "PATCH", 
+      method: "PATCH",
       headers: buildHeaders(),
       body: JSON.stringify(payload),
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(getErrorMessage(data, "فشل في تحديث وقت المستوى."));
-
     return extractLevelTime(data);
   } catch {
     const times = getLocalLevelTimes();
@@ -196,10 +210,7 @@ export async function updateLevelTime(
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   getAllLevelTimes — جلب جميع أوقات المستويات (للمعلم / الأدمن)
-   GET /level-time
-────────────────────────────────────────────────────────────────────────────── */
+/* ─── جلب جميع أوقات المستويات (للمعلم / الأدمن) ─── */
 export async function getAllLevelTimes(): Promise<LevelTime[]> {
   seedIfNeeded();
   try {
@@ -207,20 +218,15 @@ export async function getAllLevelTimes(): Promise<LevelTime[]> {
       method: "GET",
       headers: buildHeaders(),
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب أوقات المستويات."));
-    
     return extractLevelTimes(data);
   } catch {
     return getLocalLevelTimes();
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   getLevelTimeByLevel — جلب وقت مستوى معين (للطالب)
-   GET /level-time/:level
-────────────────────────────────────────────────────────────────────────────── */
+/* ─── جلب وقت مستوى معين (للطالب) ─── */
 export async function getLevelTimeByLevel(level: string): Promise<LevelTime[]> {
   seedIfNeeded();
   try {
@@ -228,35 +234,25 @@ export async function getLevelTimeByLevel(level: string): Promise<LevelTime[]> {
       method: "GET",
       headers: buildHeaders(),
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب وقت المستوى."));
-    
     const times = extractLevelTimes(data);
-    
-    // إذا كانت الاستجابة كائن واحد وليست مصفوفة
-    if (!Array.isArray(times) && typeof times === 'object' && times !== null) {
+    if (!Array.isArray(times) && typeof times === "object" && times !== null) {
       return [times as LevelTime];
     }
-    
     return times;
   } catch {
-    const times = getLocalLevelTimes();
-    return times.filter(t => t.level === level);
+    return getLocalLevelTimes().filter(t => t.level === level);
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
-   deleteLevelTime — حذف وقت مستوى دراسي
-   DELETE /level-time/:id
-────────────────────────────────────────────────────────────────────────────── */
+/* ─── حذف وقت مستوى دراسي ─── */
 export async function deleteLevelTime(levelTimeId: string): Promise<void> {
   try {
     const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
       method: "DELETE",
       headers: buildHeaders(),
     });
-
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       throw new Error(getErrorMessage(data, "فشل في حذف وقت المستوى."));
@@ -268,103 +264,80 @@ export async function deleteLevelTime(levelTimeId: string): Promise<void> {
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   دوال مساعدة للعرض — تحليل ISO datetime لاستخراج المعلومات
+   دوال مساعدة للعرض
 ════════════════════════════════════════════════════════════════════════════ */
 
-/* ── أيام الأسبوع بالعربي ── */
-const ARABIC_DAYS = [
-  "الأحد", "الاثنين", "الثلاثاء", "الأربعاء",
-  "الخميس", "الجمعة", "السبت"
-] as const;
+/* ── ترتيب أيام الأسبوع للفرز ── */
+const DAY_ORDER: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
 
-/* ── أسماء الأشهر بالعربي ── */
-const ARABIC_MONTHS = [
-  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
-] as const;
+/* ── الحصول على اسم اليوم بالعربي من قيمة اليوم ── */
+export function getDayLabel(dayValue: string): string {
+  const found = DAY_OPTIONS.find(d => d.value === dayValue);
+  return found?.label ?? dayValue;
+}
 
-/* ── استخراج اسم اليوم بالعربي من ISO datetime ── */
-export function getDayFromTime(isoTime: string): string {
+/* ── الحصول على ترتيب اليوم في الأسبوع للفرز ── */
+export function getDayOrder(dayValue: string): number {
+  return DAY_ORDER[dayValue] ?? 99;
+}
+
+/* ── تنسيق الوقت بصيغة 12 ساعة مع ص/م من "HH:MM" ── */
+export function formatTime12(timeStr: string): string {
+  if (!timeStr) return "—";
   try {
-    const date = new Date(isoTime);
-    if (isNaN(date.getTime())) return "—";
-    return ARABIC_DAYS[date.getDay()];
+    const [hStr, mStr] = timeStr.split(":");
+    let h = parseInt(hStr, 10);
+    const m = (mStr ?? "00").padStart(2, "0");
+    if (isNaN(h)) return "—";
+    const period = h >= 12 ? "م" : "ص";
+    h = h % 12 || 12;
+    return `${h}:${m} ${period}`;
   } catch {
     return "—";
   }
 }
 
-/* ── استخراج التاريخ المنسق بالعربي من ISO datetime ── */
-export function getFormattedDate(isoTime: string): string {
-  try {
-    const date = new Date(isoTime);
-    if (isNaN(date.getTime())) return "—";
-    const day = date.getDate();
-    const month = ARABIC_MONTHS[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
-  } catch {
-    return "—";
-  }
-}
-
-/* ── استخراج الوقت المنسق (ساعة:دقيقة) من ISO datetime ── */
-export function getFormattedTime(isoTime: string): string {
-  try {
-    const date = new Date(isoTime);
-    if (isNaN(date.getTime())) return "—";
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${hours}:${minutes}`;
-  } catch {
-    return "—";
-  }
-}
-
-/* ── استخراج الوقت بصيغة 12 ساعة مع ص/م ── */
-export function getFormattedTime12(isoTime: string): string {
-  try {
-    const date = new Date(isoTime);
-    if (isNaN(date.getTime())) return "—";
-    let hours = date.getHours();
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    const period = hours >= 12 ? "م" : "ص";
-    hours = hours % 12 || 12;
-    return `${hours}:${minutes} ${period}`;
-  } catch {
-    return "—";
-  }
-}
-
-/* ── تحويل datetime-local value إلى ISO string للـ API ── */
-export function datetimeLocalToISO(datetimeLocal: string): string {
-  // datetime-local format: "2026-07-30T10:00"
-  // API expects: "2026-07-30T10:00:00"
-  if (!datetimeLocal) return "";
-  // إضافة الثواني إذا لم تكن موجودة
-  return datetimeLocal.length === 16 ? `${datetimeLocal}:00` : datetimeLocal;
-}
-
-/* ── تحويل ISO string إلى datetime-local value للنموذج ── */
-export function isoToDatetimeLocal(isoTime: string): string {
-  if (!isoTime) return "";
-  try {
-    const date = new Date(isoTime);
-    if (isNaN(date.getTime())) return "";
-    // نحتاج التنسيق: "YYYY-MM-DDTHH:MM"
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const hours = date.getHours().toString().padStart(2, "0");
-    const minutes = date.getMinutes().toString().padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  } catch {
-    return "";
-  }
+/* ── فرز أوقات المستوى: حسب اليوم ثم الوقت ── */
+export function sortLevelTimes(times: LevelTime[]): LevelTime[] {
+  return [...times].sort((a, b) => {
+    const dayDiff = getDayOrder(a.day) - getDayOrder(b.day);
+    if (dayDiff !== 0) return dayDiff;
+    return (a.time ?? "").localeCompare(b.time ?? "");
+  });
 }
 
 /* ── دالة مساعدة للحصول على اسم المستوى بالعربي ── */
 export function getLevelLabel(levelValue: string): string {
   const level = LEVEL_OPTIONS.find((l: { value: string; label: string }) => l.value === levelValue);
   return level?.label || levelValue;
+}
+
+/* ══ دوال قديمة محتفظ بها للتوافق مع أجزاء أخرى لو وُجدت ══ */
+
+/** @deprecated استخدم getDayLabel بدلاً منها */
+export function getDayFromTime(isoTime: string): string {
+  return getDayLabel(isoTime);
+}
+
+/** @deprecated استخدم formatTime12 بدلاً منها */
+export function getFormattedTime12(isoTime: string): string {
+  return formatTime12(isoTime);
+}
+
+/** @deprecated لا داعي لها بعد إزالة التاريخ */
+export function getFormattedDate(_isoTime: string): string {
+  return "";
+}
+
+/** @deprecated لا داعي لها بعد إزالة التاريخ */
+export function datetimeLocalToISO(v: string): string {
+  return v;
+}
+
+/** @deprecated لا داعي لها بعد إزالة التاريخ */
+export function isoToDatetimeLocal(v: string): string {
+  return v;
 }
