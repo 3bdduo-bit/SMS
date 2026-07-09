@@ -30,8 +30,58 @@ export interface Book {
   [key: string]: unknown;
 }
 
-/* ── نظام تخزين وهمي للكتب (لأن الـ API قد لا يحفظها) ── */
+/* ── مفتاح التخزين المحلي ── */
 const BOOKS_LOCAL_DB = "sms_books_db";
+const BOOKS_SEEDED = "sms_books_seeded";
+
+/* ── البيانات التجريبية (أمثلة) ── */
+const SEED_BOOKS: Book[] = [
+  {
+    id: "seed-b1",
+    title: "مذكرة اللغة العربية",
+    author: "أ. أحمد محمود",
+    description: "مذكرة شاملة لقواعد النحو والإملاء للصف الأول الإعدادي.",
+    level: "seven",
+    type: "book",
+    fileUrl: "https://example.com/arabic-book.pdf",
+    coverUrl: "",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "seed-b2",
+    title: "ملخص قوانين الفيزياء",
+    author: "أ. محمد عبدالسلام",
+    description: "مصغر يجمع أهم قوانين الفيزياء للمراجعة السريعة.",
+    level: "ten",
+    type: "mini-book",
+    fileUrl: "https://example.com/physics-summary.pdf",
+    coverUrl: "",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "seed-b3",
+    title: "كتاب الرياضيات (الجزء الأول)",
+    author: "وزارة التربية والتعليم",
+    description: "الكتاب المدرسي الرسمي للجبر والهندسة.",
+    level: "nine",
+    type: "book",
+    fileUrl: "https://example.com/math-book.pdf",
+    coverUrl: "",
+    createdAt: new Date().toISOString(),
+  }
+];
+
+function seedIfNeeded() {
+  if (typeof window === "undefined") return;
+  const alreadySeeded = localStorage.getItem(BOOKS_SEEDED);
+  if (alreadySeeded) return;
+
+  const existing = getLocalBooks();
+  if (existing.length === 0) {
+    saveLocalBooks(SEED_BOOKS);
+  }
+  localStorage.setItem(BOOKS_SEEDED, "true");
+}
 
 function getLocalBooks(): Book[] {
   if (typeof window === "undefined") return [];
@@ -69,6 +119,7 @@ function buildHeaders(extra: Record<string, string> = {}): HeadersInit {
    GET /admin/books
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getBooks(): Promise<Book[]> {
+  seedIfNeeded();
   try {
     const res = await fetch(`${API_URL}/admin/books`, {
       method: "GET",
@@ -99,6 +150,7 @@ export async function getBooks(): Promise<Book[]> {
    GET /admin/books/level/:level
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getBooksByLevel(level: string): Promise<Book[]> {
+  seedIfNeeded();
   try {
     const res = await fetch(`${API_URL}/admin/books/level/${level}`, {
       method: "GET",
@@ -178,6 +230,7 @@ export async function deleteBook(bookId: string | number): Promise<void> {
    GET /student/books
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getStudentBooks(): Promise<Book[]> {
+  seedIfNeeded();
   try {
     const res = await fetch(`${API_URL}/student/books`, {
       method: "GET",
@@ -214,6 +267,7 @@ export async function getStudentBooks(): Promise<Book[]> {
    GET /admin/books/type/:type
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getBooksByType(type: "book" | "mini-book"): Promise<Book[]> {
+  seedIfNeeded();
   try {
     const res = await fetch(`${API_URL}/admin/books/type/${type}`, {
       method: "GET",

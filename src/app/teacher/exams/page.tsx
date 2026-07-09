@@ -92,7 +92,7 @@ export default function TeacherExamsPage() {
     setLoadingExams(true);
     try {
       const data = await getTeacherExams();
-      setExams(data);
+      setExams(Array.isArray(data) ? data : []);
     } catch {
       setExams([]);
     } finally {
@@ -756,7 +756,7 @@ export default function TeacherExamsPage() {
                       <div key={r._id || i} className="flex items-center justify-between p-3 rounded-2xl" style={{ backgroundColor: C.input, border: `1px solid ${C.border}` }}>
                         <div className="flex flex-col">
                           <span className="font-bold text-sm" style={{ color: C.textP }}>{String(name)}</span>
-                          {r.submittedAt && <span className="text-xs mt-0.5" style={{ color: C.textM }}>{new Date(r.submittedAt).toLocaleString("ar-EG")}</span>}
+                          {r.submittedAt && <span className="text-xs mt-0.5" style={{ color: C.textM }}>{formatDate(r.submittedAt)}</span>}
                         </div>
                         <div className="flex items-center justify-center min-w-[3rem] h-12 px-2 rounded-xl font-extrabold text-lg shadow-sm" style={{ backgroundColor: passed ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: passed ? "#16a34a" : "#dc2626" }}>
                           {r.score}/{total || "—"}
@@ -879,13 +879,13 @@ export default function TeacherExamsPage() {
                       </div>
                       <div className="rounded-xl p-2 text-center" style={{ backgroundColor: C.icon }}>
                         <Calendar className="w-3.5 h-3.5 mx-auto mb-0.5" style={{ color: C.textM }} />
-                        <p className="text-xs font-bold truncate" style={{ color: C.textP }}>{new Date(exam.startAt).toLocaleDateString("ar-EG")}</p>
+                        <p className="text-xs font-bold truncate" style={{ color: C.textP }}>{formatDate(exam.startAt)}</p>
                         <p className="text-xs" style={{ color: C.textM }}>بدء</p>
                       </div>
                       {exam.endAt && (
                         <div className="rounded-xl p-2 text-center" style={{ backgroundColor: "rgba(239,68,68,0.07)", border: "1.5px solid rgba(239,68,68,0.2)" }}>
                           <Calendar className="w-3.5 h-3.5 mx-auto mb-0.5" style={{ color: "#dc2626" }} />
-                          <p className="text-xs font-bold truncate" style={{ color: "#dc2626" }}>{new Date(exam.endAt).toLocaleDateString("ar-EG")}</p>
+                          <p className="text-xs font-bold truncate" style={{ color: "#dc2626" }}>{formatDate(exam.endAt)}</p>
                           <p className="text-xs" style={{ color: "#dc2626" }}>انتهاء</p>
                         </div>
                       )}

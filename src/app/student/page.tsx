@@ -12,7 +12,8 @@
 
 import {
   GraduationCap, ClipboardList, Settings, LogOut, User,
-  ChevronLeft, Bell, Menu, X, LayoutDashboard, Clock, CheckCircle2, BookOpen, CreditCard
+  ChevronLeft, Bell, Menu, X, LayoutDashboard, Clock, CheckCircle2, BookOpen, CreditCard,
+  Video
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -43,6 +44,13 @@ const quickAccess = [
     desc: "تصفح الكتب والمصغرات الخاصة بمستواك.",
     icon: BookOpen,
     href: "/student/books",
+    highlight: false,
+  },
+  {
+    title: "الفيديوهات",
+    desc: "شاهد الفيديوهات التعليمية الخاصة بمستواك.",
+    icon: Video,
+    href: "/student/videos",
     highlight: false,
   },
   {

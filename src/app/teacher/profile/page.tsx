@@ -141,12 +141,6 @@ export default function ProfilePage() {
                 {profile ? getDisplayName(profile) : "—"}
               </h1>
               {profile?.userName && <p className="text-[#A8C8E8]/80 text-sm mt-1 font-mono">@{profile.userName}</p>}
-              {profile?.level && (
-                <div className="flex items-center justify-center sm:justify-start gap-1.5 mt-2">
-                  <BookOpen className="w-3.5 h-3.5 text-[#A8C8E8]/70" />
-                  <span className="text-[#A8C8E8]/70 text-xs">المستوى: {profile.level}</span>
-                </div>
-              )}
               {profile?.createdAt && (
                 <div className="flex items-center justify-center sm:justify-start gap-1.5 mt-2 text-[#A8C8E8]/70 text-xs">
                   <Calendar className="w-3.5 h-3.5" />
@@ -159,7 +153,7 @@ export default function ProfilePage() {
           {/* أزرار الإجراءات */}
           <div className="relative z-10 flex flex-col sm:flex-row gap-3 mt-7 w-full sm:w-auto">
             <Link href="/teacher/profile/edit" className="flex items-center justify-center gap-2 bg-[#FFF2DB] text-[#0A2947] px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 w-full sm:w-auto text-center">
-              <KeyRound className="w-4 h-4" /> تغيير كلمة المرور
+              <Pencil className="w-4 h-4" /> تعديل البيانات
             </Link>
           </div>
         </div>
@@ -170,7 +164,6 @@ export default function ProfilePage() {
           {(profile?.fullName || profile?.name) && <InfoCard C={C} icon={User} label="الاسم الكامل" value={profile?.fullName || profile?.name || "—"} delay="0.05s" />}
           {profile?.email        && <InfoCard C={C} icon={Mail}     label="البريد الإلكتروني" value={profile.email}                                delay="0.1s"  ltr />}
           {(profile?.phoneNumber || profile?.phone) && <InfoCard C={C} icon={Phone} label="رقم الهاتف" value={profile?.phoneNumber || profile?.phone || "—"} delay="0.15s" ltr />}
-          {profile?.level        && <InfoCard C={C} icon={BookOpen} label="المستوى الدراسي"  value={profile.level}                                delay="0.2s"  />}
           {profile?.role         && <InfoCard C={C} icon={Shield}   label="الدور الوظيفي"    value={getRoleLabel(profile.role)}                   delay="0.25s" />}
           {profile?.createdAt    && <InfoCard C={C} icon={Calendar} label="تاريخ الانضمام"   value={formatDate(profile.createdAt)}                delay="0.3s"  />}
         </div>

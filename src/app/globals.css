@@ -66,9 +66,8 @@
 
 /* ─── تطبيق ألوان الصفحة عبر CSS variables ─── */
 body {
-  background-color: var(--bg-page);
   color: var(--text-primary);
-  transition: background-color 0.35s ease, color 0.35s ease;
+  transition: color 0.35s ease;
 }
 
 /* ─── Smooth theme transition على كل العناصر ─── */

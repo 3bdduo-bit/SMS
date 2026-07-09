@@ -9,7 +9,7 @@
 
 /* ── ألوان الوضع النهاري ── */
 export const LIGHT = {
-  page:      "#FFFAF3",                       /* خلفية الصفحة */
+  page:      "transparent",                       /* خلفية الصفحة */
   card:      "#FFFFFF",                       /* خلفية البطاقات */
   nav:       "#FFFFFF",                       /* خلفية الـ navbar */
   input:     "#FFFAF3",                       /* خلفية الـ inputs */
@@ -35,7 +35,7 @@ export const DARK_PALETTE = {
 
 /* ── ألوان الوضع الليلي ── */
 export const DARK = {
-  page:      DARK_PALETTE.deep,               /* خلفية الصفحة */
+  page:      "transparent",               /* خلفية الصفحة */
   card:      DARK_PALETTE.slate,             /* بطاقات */
   nav:       "#0F1929",                       /* navbar — طبقة بين الصفحة والبطاقة */
   input:     "#1A2538",                       /* inputs */

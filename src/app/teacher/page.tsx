@@ -14,7 +14,8 @@
 import {
   GraduationCap, Users, BookOpen, Calendar,
   ClipboardList, MessageSquare, Settings, LogOut,
-  ChevronLeft, Bell, Menu, X, LayoutDashboard, CreditCard, Clock, CheckCircle2
+  ChevronLeft, Bell, Menu, X, LayoutDashboard, CreditCard, Clock, CheckCircle2,
+  Video
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -56,6 +57,14 @@ const quickAccess = [
     desc: "أدِر أوقات الحصص لكل مستوى دراسي وأضف أوقات جديدة.",
     icon: Clock,
     href: "/teacher/level-time",
+    highlight: false,
+    countKey: null,
+  },
+  {
+    title: "الفيديوهات التعليمية",
+    desc: "ارفع فيديوهات تعليمية وصنّفها حسب المستوى الدراسي.",
+    icon: Video,
+    href: "/teacher/videos",
     highlight: false,
     countKey: null,
   },

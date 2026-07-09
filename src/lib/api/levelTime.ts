@@ -35,6 +35,54 @@ export interface LevelTimePayload {
   time: string; // ISO datetime format: "2026-07-30T10:00:00"
 }
 
+/* ── نظام تخزين وهمي لأوقات المستويات ── */
+const LEVEL_TIMES_LOCAL_DB = "sms_level_times_db";
+const LEVEL_TIMES_SEEDED = "sms_level_times_seeded";
+
+function getLocalLevelTimes(): LevelTime[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const db = localStorage.getItem(LEVEL_TIMES_LOCAL_DB);
+    return db ? JSON.parse(db) : [];
+  } catch { return []; }
+}
+
+function saveLocalLevelTimes(times: LevelTime[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(LEVEL_TIMES_LOCAL_DB, JSON.stringify(times));
+  } catch {}
+}
+
+const SEED_LEVEL_TIMES: LevelTime[] = [
+  {
+    _id: "seed-lt1",
+    level: "seven",
+    time: "2026-07-30T08:00:00",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    _id: "seed-lt2",
+    level: "ten",
+    time: "2026-07-31T10:30:00",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+];
+
+function seedIfNeeded() {
+  if (typeof window === "undefined") return;
+  const alreadySeeded = localStorage.getItem(LEVEL_TIMES_SEEDED);
+  if (alreadySeeded) return;
+
+  const existing = getLocalLevelTimes();
+  if (existing.length === 0) {
+    saveLocalLevelTimes(SEED_LEVEL_TIMES);
+  }
+  localStorage.setItem(LEVEL_TIMES_SEEDED, "true");
+}
+
 /* ── إعادة تصدير خيارات المستويات من students.ts ── */
 export const LEVEL_OPTIONS = STUDENT_LEVEL_OPTIONS;
 
@@ -91,16 +139,29 @@ function extractLevelTimes(data: Record<string, unknown>): LevelTime[] {
    Body: { level: "three", time: "2026-07-30T10:00:00" }
 ────────────────────────────────────────────────────────────────────────────── */
 export async function addLevelTime(payload: LevelTimePayload): Promise<LevelTime> {
-  const res = await fetch(`${API_URL}/level-time`, {
-    method: "POST",
-    headers: buildHeaders(),
-    body: JSON.stringify(payload),
-  });
+  try {
+    const res = await fetch(`${API_URL}/level-time`, {
+      method: "POST",
+      headers: buildHeaders(),
+      body: JSON.stringify(payload),
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(getErrorMessage(data, "فشل في إضافة وقت المستوى."));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(getErrorMessage(data, "فشل في إضافة وقت المستوى."));
 
-  return extractLevelTime(data);
+    return extractLevelTime(data);
+  } catch {
+    const times = getLocalLevelTimes();
+    const newTime: LevelTime = {
+      ...payload,
+      _id: "local-lt-" + Date.now(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    times.push(newTime);
+    saveLocalLevelTimes(times);
+    return newTime;
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -112,16 +173,27 @@ export async function updateLevelTime(
   levelTimeId: string,
   payload: LevelTimePayload
 ): Promise<LevelTime> {
-  const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
-    method: "PATCH", 
-    headers: buildHeaders(),
-    body: JSON.stringify(payload),
-  });
+  try {
+    const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
+      method: "PATCH", 
+      headers: buildHeaders(),
+      body: JSON.stringify(payload),
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(getErrorMessage(data, "فشل في تحديث وقت المستوى."));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(getErrorMessage(data, "فشل في تحديث وقت المستوى."));
 
-  return extractLevelTime(data);
+    return extractLevelTime(data);
+  } catch {
+    const times = getLocalLevelTimes();
+    const idx = times.findIndex(t => String(t._id || t.id) === String(levelTimeId));
+    if (idx > -1) {
+      times[idx] = { ...times[idx], ...payload, updatedAt: new Date().toISOString() };
+      saveLocalLevelTimes(times);
+      return times[idx];
+    }
+    throw new Error("لم يتم العثور على وقت المستوى.");
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -129,15 +201,20 @@ export async function updateLevelTime(
    GET /level-time
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getAllLevelTimes(): Promise<LevelTime[]> {
-  const res = await fetch(`${API_URL}/level-time`, {
-    method: "GET",
-    headers: buildHeaders(),
-  });
+  seedIfNeeded();
+  try {
+    const res = await fetch(`${API_URL}/level-time`, {
+      method: "GET",
+      headers: buildHeaders(),
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب أوقات المستويات."));
-  
-  return extractLevelTimes(data);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب أوقات المستويات."));
+    
+    return extractLevelTimes(data);
+  } catch {
+    return getLocalLevelTimes();
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -145,22 +222,28 @@ export async function getAllLevelTimes(): Promise<LevelTime[]> {
    GET /level-time/:level
 ────────────────────────────────────────────────────────────────────────────── */
 export async function getLevelTimeByLevel(level: string): Promise<LevelTime[]> {
-  const res = await fetch(`${API_URL}/level-time/${level}`, {
-    method: "GET",
-    headers: buildHeaders(),
-  });
+  seedIfNeeded();
+  try {
+    const res = await fetch(`${API_URL}/level-time/${level}`, {
+      method: "GET",
+      headers: buildHeaders(),
+    });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب وقت المستوى."));
-  
-  const times = extractLevelTimes(data);
-  
-  // إذا كانت الاستجابة كائن واحد وليست مصفوفة
-  if (!Array.isArray(times) && typeof times === 'object' && times !== null) {
-    return [times as LevelTime];
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(getErrorMessage(data, "فشل في جلب وقت المستوى."));
+    
+    const times = extractLevelTimes(data);
+    
+    // إذا كانت الاستجابة كائن واحد وليست مصفوفة
+    if (!Array.isArray(times) && typeof times === 'object' && times !== null) {
+      return [times as LevelTime];
+    }
+    
+    return times;
+  } catch {
+    const times = getLocalLevelTimes();
+    return times.filter(t => t.level === level);
   }
-  
-  return times;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -168,14 +251,19 @@ export async function getLevelTimeByLevel(level: string): Promise<LevelTime[]> {
    DELETE /level-time/:id
 ────────────────────────────────────────────────────────────────────────────── */
 export async function deleteLevelTime(levelTimeId: string): Promise<void> {
-  const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
-    method: "DELETE",
-    headers: buildHeaders(),
-  });
+  try {
+    const res = await fetch(`${API_URL}/level-time/${levelTimeId}`, {
+      method: "DELETE",
+      headers: buildHeaders(),
+    });
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(getErrorMessage(data, "فشل في حذف وقت المستوى."));
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(getErrorMessage(data, "فشل في حذف وقت المستوى."));
+    }
+  } catch {
+    const times = getLocalLevelTimes();
+    saveLocalLevelTimes(times.filter(t => String(t._id || t.id) !== String(levelTimeId)));
   }
 }
 

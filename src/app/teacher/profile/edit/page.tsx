@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  User, Phone, Lock, Eye, EyeOff,
+  User, Phone, Lock, Eye, EyeOff, Mail,
   Save, ArrowRight, GraduationCap, LogOut,
   AlertCircle, CheckCircle2, RefreshCw,
 } from "lucide-react";
@@ -24,6 +24,8 @@ import ThemeToggle from "@/components/ThemeToggle";
 /* ── نوع أخطاء النموذج ── */
 interface FormErrors {
   fullName?: string;
+  userName?: string;
+  email?: string;
   phone?: string;
   password?: string;
   confirmPassword?: string;
@@ -40,8 +42,13 @@ export default function EditProfilePage() {
   const tr         = "transition-all duration-300 ease-in-out";
 
   /* ── بيانات النموذج ── */
+  const [fullName, setFullName]               = useState("");
+  const [userName, setUserName]               = useState("");
+  const [email, setEmail]                     = useState("");
+  const [phone, setPhone]                     = useState("");
   const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
   const [showPassword, setShowPassword]       = useState(false);
   const [showConfirm, setShowConfirm]         = useState(false);
 
@@ -52,11 +59,15 @@ export default function EditProfilePage() {
   const [success, setSuccess]               = useState("");
   const [errors, setErrors]                 = useState<FormErrors>({});
 
-  /* ── جلب البيانات الحالية للتحقق (اختياري) ── */
+  /* ── جلب البيانات الحالية للتحقق وملء الحقول ── */
   const fetchAndFill = useCallback(async () => {
     setLoadingProfile(true); setFetchError("");
     try {
-      await getProfile(); // Just to verify token is valid and user exists
+      const profile = await getProfile();
+      setFullName(profile.fullName || profile.name || "");
+      setUserName(profile.userName || "");
+      setEmail(profile.email || "");
+      setPhone(profile.phoneNumber || profile.phone || "");
     } catch (err: unknown) {
       setFetchError(err instanceof Error ? err.message : "فشل في التحقق من الحساب.");
     } finally { setLoadingProfile(false); }
@@ -70,9 +81,10 @@ export default function EditProfilePage() {
   /* ── التحقق من الحقول ── */
   const validate = (): boolean => {
     const e: FormErrors = {};
-    if (!password)                                                    e.password        = "كلمة المرور مطلوبة.";
-    else if (password.length < 6)                                     e.password        = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
-    if (password !== confirmPassword)                                 e.confirmPassword = "كلمتا المرور غير متطابقتان.";
+    if (!fullName.trim()) e.fullName = "الاسم الكامل مطلوب.";
+    if (!userName.trim()) e.userName = "اسم المستخدم مطلوب.";
+    if (password && password.length < 6) e.password = "كلمة المرور يجب أن تكون 6 أحرف على الأقل.";
+    if (password && password !== confirmPassword) e.confirmPassword = "كلمتا المرور غير متطابقتان.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -82,13 +94,30 @@ export default function EditProfilePage() {
     ev.preventDefault(); setSuccess(""); setErrors({});
     if (!validate()) return;
 
-    const payload: Record<string, string> = { password };
+    const payload: Record<string, string> = {
+      fullName: fullName.trim(),
+      userName: userName.trim(),
+      email: email.trim(),
+      phoneNumber: phone.trim(),
+    };
+    
+    // إرسال كلمة المرور فقط إذا قام المعلم بتغييرها
+    if (password) {
+      payload.password = password;
+    }
 
     setSubmitting(true);
     try {
-      await updateUser(payload);
-      setSuccess("تم تغيير كلمة المرور بنجاح!");
-      setPassword(""); setConfirmPassword("");
+      const updated = await updateUser(payload);
+      
+      // تحديث بيانات المستخدم في الـ localStorage إذا لزم الأمر
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        localStorage.setItem("user", JSON.stringify({ ...parsed, ...updated }));
+      }
+      
+      setSuccess("تم تحديث البيانات بنجاح!");
       setTimeout(() => router.push("/teacher/profile"), 2000);
     } catch (err: unknown) {
       setErrors({ general: err instanceof Error ? err.message : "حدث خطأ أثناء التحديث." });
@@ -135,7 +164,7 @@ export default function EditProfilePage() {
           <div className="w-9 h-9 rounded-xl bg-[#0A2947] flex items-center justify-center shadow-md">
             <GraduationCap className="text-[#A8C8E8] w-5 h-5" />
           </div>
-          <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>تغيير كلمة المرور</span>
+          <span className="font-extrabold hidden sm:block" style={{ color: C.textP }}>تعديل البيانات</span>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -150,8 +179,8 @@ export default function EditProfilePage() {
 
         {/* ── ترويسة ── */}
         <div className="mb-8 text-center sm:text-right">
-          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: C.textP }}>تغيير كلمة المرور</h1>
-          <p className="text-sm" style={{ color: C.textM }}>قم بتعيين كلمة مرور جديدة لحسابك.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold mb-2" style={{ color: C.textP }}>تعديل البيانات</h1>
+          <p className="text-sm" style={{ color: C.textM }}>قم بتحديث بيانات حسابك الشخصي أدناه.</p>
         </div>
 
         {/* ── بطاقة النموذج ── */}
@@ -171,16 +200,28 @@ export default function EditProfilePage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <FormField C={C} id="edit-fullname" label="الاسم الكامل" icon={User} value={fullName} onChange={setFullName} error={errors.fullName} placeholder="أدخل اسمك الكامل" />
+              <FormField C={C} id="edit-username" label="اسم المستخدم" icon={User} value={userName} onChange={setUserName} error={errors.userName} placeholder="أدخل اسم المستخدم" ltr />
+              <FormField C={C} id="edit-email" label="البريد الإلكتروني (اختياري)" icon={Mail} value={email} onChange={setEmail} error={errors.email} placeholder="example@email.com" type="email" ltr />
+              <FormField C={C} id="edit-phone" label="رقم الهاتف (اختياري)" icon={Phone} value={phone} onChange={setPhone} error={errors.phone} placeholder="05xxxxxxxx" type="tel" ltr />
+            </div>
 
-            <PasswordField C={C} id="edit-password" label="كلمة المرور الجديدة" value={password}        onChange={setPassword}        error={errors.password}        show={showPassword} onToggle={() => setShowPassword(p => !p)} />
-            <PasswordField C={C} id="edit-confirm"   label="تأكيد كلمة المرور"   value={confirmPassword} onChange={setConfirmPassword} error={errors.confirmPassword} show={showConfirm}  onToggle={() => setShowConfirm(p => !p)} />
+            <div className="pt-4 border-t" style={{ borderColor: C.border }}>
+              <h3 className="font-bold text-sm mb-4" style={{ color: C.textP }}>تغيير كلمة المرور <span className="font-normal text-xs" style={{ color: C.textM }}>(اترك الحقلين فارغين إذا لم ترد التغيير)</span></h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <PasswordField C={C} id="edit-password" label="كلمة المرور الجديدة" value={password}        onChange={setPassword}        error={errors.password}        show={showPassword} onToggle={() => setShowPassword(p => !p)} />
+                <PasswordField C={C} id="edit-confirm"   label="تأكيد كلمة المرور"   value={confirmPassword} onChange={setConfirmPassword} error={errors.confirmPassword} show={showConfirm}  onToggle={() => setShowConfirm(p => !p)} />
+              </div>
+            </div>
 
             {/* ── زر الحفظ ── */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-xl bg-[#0A2947] text-[#FFFAF3] font-bold text-sm flex items-center justify-center gap-2 mt-2 transition-all duration-300 hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,41,71,0.3)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-[#0A2947] text-[#FFFAF3] font-bold text-sm flex items-center justify-center gap-2 mt-4 transition-all duration-300 hover:bg-[#0d365e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(10,41,71,0.3)] active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
             >
               {submitting
                 ? <><div className="w-4 h-4 border-2 border-[#A8C8E8]/30 border-t-[#A8C8E8] rounded-full animate-spin" /> جارٍ الحفظ…</>
