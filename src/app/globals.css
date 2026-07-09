@@ -1,6 +1,27 @@
 /* ─── Tailwind base import ─── */
 @import "tailwindcss";
 
+/* ─── Tailwind theme: تعريف الخطوط كـ design tokens ─── */
+@theme {
+  --font-body: "Alexandria", "Segoe UI", Tahoma, sans-serif;
+  --font-heading: "Cairo", "Segoe UI", sans-serif;
+}
+
+/* ─── تطبيق الخط الافتراضي على كل الموقع ─── */
+html,
+body {
+  font-family: var(--font-body);
+  font-size: 17.5px; /* Increase base font size slightly */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─── خط العناوين — Aref Ruqaa للطابع العربي الأنيق ─── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
 /* ─────────────────────────────────────────────────────────────────────
    CSS Variables — Light Mode (الوضع النهاري)
    Referenced as: bg-[var(--bg-page)], text-[var(--text-primary)], etc.

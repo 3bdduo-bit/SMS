@@ -9,6 +9,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import BackgroundVideo from "@/components/BackgroundVideo";
 import AppLoaderWrapper from "@/components/AppLoaderWrapper";
+import SecurityGuard from "@/components/SecurityGuard";
 
 /* عنوان وصف الصفحة */
 export const metadata: Metadata = {
@@ -33,9 +34,20 @@ export default function RootLayout({
   return (
     /* lang="ar" + dir="rtl" يُطبَّقان على كامل الموقع */
     <html lang="ar" dir="rtl">
-      <body className="min-h-screen flex flex-col">
+      <head>
+        {/* ── خطوط Google: Alexandria للنص العام، Cairo للعناوين ── */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=Alexandria:wght@100..900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen flex flex-col font-body">
         {/* ThemeProvider يجعل كل المكوّنات تُعيد الرسم عند تغيير الثيم */}
         <ThemeProvider>
+          {/* حارس الأمان — يمنع الكليك الأيمن وأدوات المطوّر */}
+          <SecurityGuard />
           {/* AppLoaderWrapper: يُظهر شاشة التحميل عند أول زيارة في الجلسة */}
           <AppLoaderWrapper>
             {/* فيديو الخلفية — يعمل على جميع صفحات الموقع */}

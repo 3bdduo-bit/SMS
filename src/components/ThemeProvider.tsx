@@ -8,6 +8,10 @@
    - عند الضغط على التبديل تظهر طبقة دائرية تغطي الشاشة (رابل)
    - في منتصف الأنيميشن يُطبَّق تغيير الثيم الفعلي
    - هكذا يختفي الـ "lag" تماماً ويصبح الانتقال سينمائياً
+   
+   إصلاح Hydration:
+   - إضافة mounted state لمنع عدم التطابق بين Server و Client
+   - عرض شاشة فارغة مؤقتة حتى يتم تحميل التفضيل من localStorage
 ───────────────────────────────────────────────────────────────────────────── */
 
 import {
@@ -38,6 +42,9 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false);
 
+  /* ── حالة التحميل — true فقط بعد قراءة localStorage (client فقط) ── */
+  const [mounted, setMounted] = useState(false);
+
   /* ── حالة الأوفرلاي ── */
   const [overlayActive, setOverlayActive] = useState(false);
   const [overlayTowardDark, setOverlayTowardDark] = useState(false);
@@ -58,6 +65,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setIsDark(prefersDark);
       document.documentElement.classList.toggle("dark", prefersDark);
     }
+
+    /* ✅ الآن نحن في Client وقرأنا القيمة الصحيحة — آمن للعرض */
+    setMounted(true);
   }, []);
 
   /* ── تبديل الثيم مع أنيميشن الغطاء ── */
@@ -93,6 +103,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       isAnimating.current = false;
     }, 560); // ما تبقى من الـ 1000ms بعد الـ 500ms الأولى + هامش بسيط
   }, []);
+
+  /* ── قبل التحميل: إخفاء المحتوى لمنع Hydration mismatch ──
+     نعرض div فارغ بنفس خلفية الصفحة حتى لا يظهر وميض
+  */
+  if (!mounted) {
+    return (
+      <div style={{ visibility: "hidden" }}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <ThemeContext.Provider value={{ isDark, toggle }}>
