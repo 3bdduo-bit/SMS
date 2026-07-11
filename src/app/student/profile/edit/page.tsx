@@ -12,11 +12,10 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  User, Phone, Lock, Eye, EyeOff,
-  Save, ArrowRight, GraduationCap, LogOut,
-  AlertCircle, CheckCircle2, RefreshCw, Home
+  Lock, Eye, EyeOff, Save, GraduationCap,
+  LogOut, AlertCircle, CheckCircle2, RefreshCw, Home
 } from "lucide-react";
-import { getProfile, updateUser, UserProfile } from "@/lib/api/user";
+import { getProfile, updateUser } from "@/lib/api/user";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors, ThemeColors } from "@/lib/theme/colors";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -62,7 +61,10 @@ export default function EditProfilePage() {
     } finally { setLoadingProfile(false); }
   }, []);
 
-  useEffect(() => { fetchAndFill(); }, [fetchAndFill]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAndFill();
+  }, [fetchAndFill]);
 
   /* ── تسجيل الخروج ── */
   const handleLogout = () => { localStorage.removeItem("token"); localStorage.removeItem("user"); router.push("/auth/login"); };
@@ -198,33 +200,6 @@ export default function EditProfilePage() {
   );
 }
 
-/* ── SectionTitle ── */
-function SectionTitle({ C, title }: { C: ThemeColors; title: string }) {
-  return <h2 className="text-sm font-extrabold border-r-4 border-[#A8C8E8] pr-3 py-0.5" style={{ color: C.textP }}>{title}</h2>;
-}
-
-/* ── FormField — حقل نصي مع دعم الثيم ── */
-function FormField({ C, id, label, icon: Icon, value, onChange, error, placeholder, type = "text", ltr = false }: {
-  C: ThemeColors; id: string; label: string; icon: React.ElementType; value: string;
-  onChange: (v: string) => void; error?: string; placeholder?: string; type?: string; ltr?: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs sm:text-sm font-semibold" style={{ color: C.textP }}>{label}</label>
-      <div className="relative group">
-        <Icon className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: C.textM }} />
-        <input
-          id={id} type={type} placeholder={placeholder} value={value}
-          onChange={e => onChange(e.target.value)}
-          className={`w-full pr-10 pl-4 py-3 rounded-xl text-sm outline-none transition-all duration-300 ${error ? "focus:shadow-[0_0_0_4px_rgba(248,113,113,0.2)]" : "focus:shadow-[0_0_0_4px_rgba(168,200,232,0.35)]"}`}
-          style={{ backgroundColor: C.input, color: C.textP, border: `2px solid ${error ? "#f87171" : C.border}` }}
-          dir={ltr ? "ltr" : "rtl"}
-        />
-      </div>
-      {error && <span className="text-red-500 text-xs font-medium flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {error}</span>}
-    </div>
-  );
-}
 
 /* ── PasswordField — حقل كلمة المرور مع زر الإظهار ── */
 function PasswordField({ C, id, label, value, onChange, error, show, onToggle }: {

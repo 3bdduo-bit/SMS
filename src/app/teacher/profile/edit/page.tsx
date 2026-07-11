@@ -13,14 +13,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   User, Phone, Lock, Eye, EyeOff, Mail,
-  Save, ArrowRight, GraduationCap, LogOut,
+  Save, GraduationCap, LogOut,
   AlertCircle, CheckCircle2, RefreshCw, Home
 } from "lucide-react";
 import { getProfile, updateUser, UserProfile } from "@/lib/api/user";
 import { useTheme } from "@/components/ThemeProvider";
 import { getColors, ThemeColors } from "@/lib/theme/colors";
 import ThemeToggle from "@/components/ThemeToggle";
-
 /* ── نوع أخطاء النموذج ── */
 interface FormErrors {
   fullName?: string;
