@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import {
   User, Phone, Lock, Eye, EyeOff, Mail,
   Save, ArrowRight, GraduationCap, LogOut,
-  AlertCircle, CheckCircle2, RefreshCw,
+  AlertCircle, CheckCircle2, RefreshCw, Home
 } from "lucide-react";
 import { getProfile, updateUser, UserProfile } from "@/lib/api/user";
 import { useTheme } from "@/components/ThemeProvider";
