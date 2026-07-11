@@ -157,8 +157,12 @@ export default function EditProfilePage() {
         className={`px-4 sm:px-8 py-3 flex justify-between items-center sticky top-0 z-50 ${tr}`}
         style={{ backgroundColor: C.nav, borderBottom: `1px solid ${C.border}`, boxShadow: C.navShadow }}
       >
-        <Link href="/teacher/profile" className="flex items-center gap-2 font-semibold text-sm group" style={{ color: C.textP }}>
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /> العودة
+        <Link
+          href="/teacher/profile"
+          className="p-2 rounded-xl hover:bg-black/5 transition-colors group flex items-center justify-center"
+          title="العودة للرئيسية"
+        >
+          <Home className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" style={{ color: C.textP }} />
         </Link>
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-[#0A2947] flex items-center justify-center shadow-md">

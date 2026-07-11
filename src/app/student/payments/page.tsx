@@ -14,7 +14,7 @@
 import {
   GraduationCap, LogOut, ChevronLeft, AlertCircle, Loader2,
   Menu, X, CreditCard, Calendar, CheckCircle2, Clock, AlertTriangle
-} from "lucide-react";
+, Home } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -163,6 +163,13 @@ export default function StudentPaymentsPage() {
         style={{ backgroundColor: C.nav, borderBottom: `1px solid ${C.border}`, boxShadow: C.navShadow }}
       >
         <div className="flex items-center gap-3">
+          <Link
+            href="/student"
+            className="p-2 rounded-xl hover:bg-black/5 transition-colors group flex items-center justify-center"
+            title="العودة للرئيسية"
+          >
+            <Home className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" style={{ color: C.textP }} />
+          </Link>
           <Link href="/student" className="flex items-center gap-3 group">
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#0A2947] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
               <CreditCard className="text-[#A8C8E8] w-5 h-5 sm:w-6 sm:h-6" />
